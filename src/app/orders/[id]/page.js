@@ -27,6 +27,14 @@ const Page = ({ params }) => {
       });
       console.log("Document written with ID: ", docRef.id);
       setPinExists(true);
+      
+      localStorage.setItem('table', id);
+      window.alert("redirecting");
+
+      setTimeout(() => {
+        window.location.href = "/orders";
+      }, 3000);
+
     } catch (e) {
       console.error("Error adding document: ", e);
     }
@@ -66,12 +74,13 @@ const Page = ({ params }) => {
           email: email,
           table: id,
         });
-        localStorage.setItem("user", name);
-        localStorage.setItem("table", id);
-
+        localStorage.setItem(user, name);
+        localStorage.setItem(table, id);
+        window.alert("redirecting");
         setTimeout(() => {
+          
           window.location.href = "/orders";
-        }, 5000);
+        }, 3000);
       } else {
         window.alert("Invalid Pin");
         setValue("");
