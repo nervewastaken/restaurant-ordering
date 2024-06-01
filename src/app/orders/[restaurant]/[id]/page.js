@@ -5,11 +5,12 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const Page = ({ params }) => {
-  const { id } = params;
+  const { restaurant, id } = params;
   const [value, setValue] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pinExists, setPinExists] = useState(false);
+
 
   const generateRandomNumber = () => {
     const randomNumber = Math.floor(Math.random() * 10000);
@@ -20,21 +21,22 @@ const Page = ({ params }) => {
   const handlePinCreation = async () => {
     const PIN = generateRandomNumber();
     console.log(PIN);
+
     try {
-      const docRef = await addDoc(collection(db, "tables"), {
+      const docRef = await addDoc(collection(db, "restaurants", restaurant, "tables"), {
         tid: id,
         pin: PIN,
       });
       console.log("Document written with ID: ", docRef.id);
       setPinExists(true);
-      
+
       localStorage.setItem('table', id);
-      window.alert("redirecting");
+      localStorage.setItem('restaurant',restaurant);
+      window.alert(`your pin is ${PIN} redirecting`);
 
       setTimeout(() => {
         window.location.href = "/orders";
       }, 3000);
-
     } catch (e) {
       console.error("Error adding document: ", e);
     }
@@ -43,7 +45,7 @@ const Page = ({ params }) => {
   const fetchData = async () => {
     try {
       const q = query(
-        collection(db, "tables"),
+        collection(db, "restaurants", restaurant, "tables"),
         where("tid", "==", id),
         where("pin", "!=", null)
       );
@@ -62,23 +64,25 @@ const Page = ({ params }) => {
 
     try {
       const q = query(
-        collection(db, "tables"),
+        collection(db, "restaurants", restaurant, "tables"),
         where("tid", "==", id),
         where("pin", "==", value)
       );
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        const docRef2 = await addDoc(collection(db, "users"), {
+        const docRef2 = await addDoc(collection(db, "restaurants", restaurant, "users"), {
           username: name,
           email: email,
           table: id,
+          restaurant: restaurant,
         });
-        localStorage.setItem(user, name);
-        localStorage.setItem(table, id);
+        localStorage.setItem('user', name);
+        localStorage.setItem('table', id);
+        localStorage.setItem('restaurant',restaurant);
+
         window.alert("redirecting");
         setTimeout(() => {
-          
           window.location.href = "/orders";
         }, 3000);
       } else {
@@ -93,7 +97,6 @@ const Page = ({ params }) => {
   useEffect(() => {
     fetchData();
   }, []);
-
   return (
     <div className="flex justify-center">
       {id}
