@@ -35,7 +35,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <main className="flex min-h-screen justify-center py-2">
       {user ? (
         <Button onClick={handleSignOut}>Sign Out</Button>
       ) : (
