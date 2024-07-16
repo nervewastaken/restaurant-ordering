@@ -1,9 +1,8 @@
 "use client";
 import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import db from "@/firebase"
+import {db} from "@/firebase";
 
 const Page = ({ params }) => {
   const { restaurant, id } = params;
@@ -11,7 +10,7 @@ const Page = ({ params }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pinExists, setPinExists] = useState(false);
-
+  const [loading, setLoading] = useState(true); // Add loading state
 
   const generateRandomNumber = () => {
     const randomNumber = Math.floor(Math.random() * 10000);
@@ -24,16 +23,19 @@ const Page = ({ params }) => {
     console.log(PIN);
 
     try {
-      const docRef = await addDoc(collection(db, "restaurants", restaurant, "tables"), {
-        tid: id,
-        pin: PIN,
-      });
+      const docRef = await addDoc(
+        collection(db, "restaurants", restaurant, "tables"),
+        {
+          tid: id,
+          pin: PIN,
+        }
+      );
       console.log("Document written with ID: ", docRef.id);
       setPinExists(true);
 
-      localStorage.setItem('table', id);
-      localStorage.setItem('restaurant',restaurant);
-      window.alert(`your pin is ${PIN} redirecting`);
+      localStorage.setItem("table", id);
+      localStorage.setItem("restaurant", restaurant);
+      window.alert(`Your pin is ${PIN}. Redirecting...`);
 
       setTimeout(() => {
         window.location.href = "/orders";
@@ -57,6 +59,8 @@ const Page = ({ params }) => {
       }
     } catch (error) {
       console.error("Error fetching documents: ", error);
+    } finally {
+      setLoading(false); // Set loading to false after fetching data
     }
   };
 
@@ -72,17 +76,20 @@ const Page = ({ params }) => {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        const docRef2 = await addDoc(collection(db, "restaurants", restaurant, "users"), {
-          username: name,
-          email: email,
-          table: id,
-          restaurant: restaurant,
-        });
-        localStorage.setItem('user', name);
-        localStorage.setItem('table', id);
-        localStorage.setItem('restaurant',restaurant);
+        const docRef2 = await addDoc(
+          collection(db, "restaurants", restaurant, "users"),
+          {
+            username: name,
+            email: email,
+            table: id,
+            restaurant: restaurant,
+          }
+        );
+        localStorage.setItem("user", name);
+        localStorage.setItem("table", id);
+        localStorage.setItem("restaurant", restaurant);
 
-        window.alert("redirecting");
+        window.alert("Redirecting...");
         setTimeout(() => {
           window.location.href = "/orders";
         }, 3000);
@@ -98,6 +105,11 @@ const Page = ({ params }) => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  if (loading) {
+    return <div className="flex justify-center">Loading...</div>; // Display loading indicator
+  }
+
   return (
     <div className="flex justify-center">
       {id}

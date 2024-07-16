@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
-import db from "@/firebase"
+import { db } from "@/firebase";
 
 const Page = () => {
   const [user, setUser] = useState(null);
@@ -12,9 +12,9 @@ const Page = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setUser(localStorage.getItem('user'));
-      setTable(localStorage.getItem('table'));
-      setRestaurant(localStorage.getItem('restaurant'))
+      setUser(localStorage.getItem("user"));
+      setTable(localStorage.getItem("table"));
+      setRestaurant(localStorage.getItem("restaurant"));
     }
   }, []);
 
@@ -22,7 +22,10 @@ const Page = () => {
     const getTableData = async () => {
       if (restaurant && table) {
         try {
-          const q = query(collection(db, "restaurants", restaurant, "users"), where("table", "==", table));
+          const q = query(
+            collection(db, "restaurants", restaurant, "users"),
+            where("table", "==", table)
+          );
           const querySnapshot = await getDocs(q);
           const data = [];
           querySnapshot.forEach((doc) => {
@@ -50,7 +53,7 @@ const Page = () => {
         restaurant: restaurant,
       });
       setUser(formData.username);
-      localStorage.setItem('user', formData.username);
+      localStorage.setItem("user", formData.username);
       window.location.reload();
     } catch (error) {
       console.error("Error adding user:", error);
@@ -80,7 +83,9 @@ const Page = () => {
               </thead>
               <tbody>
                 {tableData.map((rowData, index) => (
-                  <tr key={index}> {/* Use a unique key */}
+                  <tr key={index}>
+                    {" "}
+                    {/* Use a unique key */}
                     <td>{rowData.username}</td>
                     <td>{rowData.email}</td>
                     {/* Add more table cells as needed */}
