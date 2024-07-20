@@ -2,7 +2,7 @@
 import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {db} from "@/firebase";
+import { db } from "@/firebase";
 
 const Page = ({ params }) => {
   const { restaurant, id } = params;
