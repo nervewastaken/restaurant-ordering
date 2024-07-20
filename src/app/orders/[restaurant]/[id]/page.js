@@ -91,7 +91,7 @@ const Page = ({ params }) => {
 
         window.alert("Redirecting...");
         setTimeout(() => {
-          window.location.href = "/orders";
+          window.location.href = `/orders/${restaurant}`;
         }, 3000);
       } else {
         window.alert("Invalid Pin");

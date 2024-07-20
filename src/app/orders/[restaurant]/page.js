@@ -71,7 +71,7 @@ const Page = () => {
       }));
       const names = {};
       dishesList.forEach((dish) => {
-        names[dish.id] = dish.name;
+        names[dish.dishId] = dish.name;
       });
       setDishes(dishesList);
       setDishNames(names);
@@ -109,6 +109,7 @@ const Page = () => {
         timestamp: new Date(),
         quantity: parseInt(quantities[dishId]) || 1,
         table: table,
+        done: false,
       });
       fetchOrders();
     } catch (error) {
@@ -185,19 +186,19 @@ const Page = () => {
             <h2>Dishes</h2>
             <ul>
               {dishes.map((dish) => (
-                <li key={dish.id}>
+                <li key={dish.dishId}>
                   {dish.name} - ${dish.price} - {dish.description}
                   <input
                     type="number"
                     min="1"
-                    value={quantities[dish.id] || 1}
+                    value={quantities[dish.dishId] || 1}
                     onChange={(e) =>
-                      handleQuantityChange(dish.id, e.target.value)
+                      handleQuantityChange(dish.dishId, e.target.value)
                     }
                     className="ml-2 w-16"
                   />
                   <button
-                    onClick={() => handleAddToOrder(dish.id)}
+                    onClick={() => handleAddToOrder(dish.dishId)}
                     className="ml-2"
                   >
                     Add to Order

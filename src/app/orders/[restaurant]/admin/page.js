@@ -1,12 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import {
-  query,
-  where,
   collection,
   getDocs,
   deleteDoc,
   doc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 import { Button } from "@/components/ui/button";
@@ -14,15 +13,13 @@ import Link from "next/link";
 
 export default function Admin() {
   const [user, setUser] = useState(null);
-  const [table1, setTable1] = useState(null);
   const [restaurant, setRestaurant] = useState(null);
   const [tableData, setTableData] = useState([]);
-  const [orderData, setOrderData] = useState([]);
+  const [orderData, setOrderData] = useState({ pending: {}, completed: {} });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       setUser(localStorage.getItem("user"));
-      setTable1(localStorage.getItem("table"));
       setRestaurant(localStorage.getItem("restaurant"));
     }
   }, []);
@@ -47,26 +44,92 @@ export default function Admin() {
     fetchTables();
   }, [restaurant]);
 
-  const handleClearTable = async (tableId) => {
-    try {
-      const tablesRef = collection(db, `restaurants/${restaurant}/tables`);
-      const tablesQuery = query(tablesRef, where("tid", "==", tableId));
-      const tablesSnapshot = await getDocs(tablesQuery);
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (restaurant) {
+        try {
+          const ordersRef = collection(db, `restaurants/${restaurant}/orders`);
+          const ordersSnapshot = await getDocs(ordersRef);
+          const ordersData = ordersSnapshot.docs.map((doc) => ({
+            oid: doc.id,
+            ...doc.data(),
+          }));
 
-      if (!tablesSnapshot.empty) {
-        const deletePromises = tablesSnapshot.docs.map(async (doc) => {
-          await deleteDoc(doc.ref);
-          console.log(`Table ${tableId} deleted successfully.`);
-        });
+          const ordersGroupedByStatus = ordersData.reduce(
+            (acc, order) => {
+              const table = order.table;
+              const status = order.done ? "completed" : "pending";
 
-        await Promise.all(deletePromises);
-        setTableData((prev) => prev.filter((table) => table.tid !== tableId));
-      } else {
-        console.log(`No table found with ID ${tableId}.`);
+              if (!acc[status][table]) {
+                acc[status][table] = [];
+              }
+
+              acc[status][table].push(order);
+              return acc;
+            },
+            { pending: {}, completed: {} }
+          );
+
+          setOrderData(ordersGroupedByStatus);
+        } catch (error) {
+          console.error("Error fetching orders:", error);
+        }
       }
+    };
+
+    fetchOrders();
+  }, [restaurant]);
+
+  const handleMarkAsDone = async (orderId, table) => {
+    try {
+      const orderDocRef = doc(db, `restaurants/${restaurant}/orders`, orderId);
+      await updateDoc(orderDocRef, { done: true });
+      console.log(`Order ${orderId} marked as done successfully.`);
+
+      // Fetch orders again to reflect the latest state
+      const fetchOrders = async () => {
+        if (restaurant) {
+          try {
+            const ordersRef = collection(
+              db,
+              `restaurants/${restaurant}/orders`
+            );
+            const ordersSnapshot = await getDocs(ordersRef);
+            const ordersData = ordersSnapshot.docs.map((doc) => ({
+              oid: doc.id,
+              ...doc.data(),
+            }));
+
+            const ordersGroupedByStatus = ordersData.reduce(
+              (acc, order) => {
+                const table = order.table;
+                const status = order.done ? "completed" : "pending";
+
+                if (!acc[status][table]) {
+                  acc[status][table] = [];
+                }
+
+                acc[status][table].push(order);
+                return acc;
+              },
+              { pending: {}, completed: {} }
+            );
+
+            setOrderData(ordersGroupedByStatus);
+          } catch (error) {
+            console.error("Error fetching orders:", error);
+          }
+        }
+      };
+
+      await fetchOrders(); // Fetch orders again to update the state
     } catch (error) {
-      console.error("Error deleting table:", error);
+      console.error("Error marking order as done:", error);
     }
+  };
+
+  const handleClearTable = async (tableId) => {
+    // Implement table deletion logic here if needed
   };
 
   return (
@@ -90,20 +153,56 @@ export default function Admin() {
           </div>
         ))}
       </div>
-      <h2>Orders for Table {table1}</h2>
+      <h2>Pending Orders</h2>
       <div>
-        {orderData.map((order) => (
-          <div
-            key={order.oid}
-            className="border p-4 rounded-lg shadow-lg bg-white"
-          >
-            <h3 className="font-bold text-lg">Order ID: {order.oid}</h3>
+        {Object.keys(orderData.pending).map((table) => (
+          <div key={table} className="mt-4">
+            <h3 className="font-bold text-lg">Orders for Table {table}</h3>
+            {orderData.pending[table].map((order) => (
+              <div
+                key={order.oid}
+                className="border p-4 rounded-lg shadow-lg bg-white mb-2"
+              >
+                <p>Dish ID: {order.dishId}</p>
+                <p>Quantity: {order.quantity}</p>
+                <p>
+                  Timestamp:{" "}
+                  {new Date(
+                    order.timestamp.seconds * 1000
+                  ).toLocaleTimeString()}
+                </p>
+                <Button
+                  variant="primary"
+                  onClick={() => handleMarkAsDone(order.oid, table)}
+                >
+                  Mark as Done
+                </Button>
+              </div>
+            ))}
           </div>
         ))}
       </div>
-
-      <Link href={`/orders/${restaurant}/dishes`}>add dishes</Link>
-
+      <h2>Completed Orders</h2>
+      <div>
+        {Object.keys(orderData.completed).map((table) => (
+          <div key={table} className="mt-4">
+            <h3 className="font-bold text-lg">
+              Completed Orders for Table {table}
+            </h3>
+            {orderData.completed[table].map((order) => (
+              <div
+                key={order.oid}
+                className="border p-4 rounded-lg shadow-lg bg-white mb-2"
+              >
+                <p>Dish ID: {order.dishId}</p>
+                <p>Quantity: {order.quantity}</p>
+                <p>{/* Timestamp is not shown for completed orders */}</p>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <Link href={`/orders/${restaurant}/dishes`}>Add Dishes</Link>
     </div>
   );
 }
