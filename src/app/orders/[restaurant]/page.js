@@ -9,6 +9,35 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "@/firebase";
+import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
+import { IconSquareRoundedX } from "@tabler/icons-react";
+
+const loadingStates = [
+  {
+    text: "Let the developer cook with the load",
+  },
+  {
+    text: "He's still cooking",
+  },
+  {
+    text: "Honestly, I'm alone here, it's going to take time",
+  },
+  {
+    text: "easter egg if the site never loads?",
+  },
+  {
+    text: "I (developer) think you should refresh",
+  },
+  {
+    text: "Start a fight",
+  },
+  {
+    text: "I was not serious about the easter egg",
+  },
+  {
+    text: "Do you feel good about yourself",
+  },
+];
 
 const Page = () => {
   const [user, setUser] = useState(null);
@@ -20,6 +49,7 @@ const Page = () => {
   const [orders, setOrders] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [dishNames, setDishNames] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -77,6 +107,8 @@ const Page = () => {
       setDishNames(names);
     } catch (error) {
       console.error("Error fetching dishes:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,6 +124,8 @@ const Page = () => {
       setOrders(ordersList);
     } catch (error) {
       console.error("Error fetching orders:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -147,88 +181,104 @@ const Page = () => {
   };
 
   return (
-    <div>
-      {user ? (
-        <div>
-          <h1>Welcome, {user}!</h1>
-          <h2>Friends</h2>
-          {tableData.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>Username</th>
-                  <th>Email</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.map((rowData, index) => (
-                  <tr key={index}>
-                    <td>{rowData.username}</td>
-                    <td>{rowData.email}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          <div className="mt-8">
-            <h2>Orders</h2>
-            <ul>
-              {orders.map((order) => (
-                <li key={order.id}>
-                  {dishNames[order.dishId]} - {order.user} - {order.quantity}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="mt-8">
-            <h2>Dishes</h2>
-            <ul>
-              {dishes.map((dish) => (
-                <li key={dish.dishId}>
-                  {dish.name} - ${dish.price} - {dish.description}
-                  <input
-                    type="number"
-                    min="1"
-                    value={quantities[dish.dishId] || 1}
-                    onChange={(e) =>
-                      handleQuantityChange(dish.dishId, e.target.value)
-                    }
-                    className="ml-2 w-16"
-                  />
-                  <button
-                    onClick={() => handleAddToOrder(dish.dishId)}
-                    className="ml-2"
-                  >
-                    Add to Order
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <div className="relative">
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-75">
+          <Loader
+            loadingStates={loadingStates}
+            loading={loading}
+            duration={2000}
+          />
+          <button
+            className="absolute top-4 right-4 text-black dark:text-white z-50"
+            onClick={() => setLoading(false)}
+          >
+            <IconSquareRoundedX className="h-10 w-10" />
+          </button>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="username">Username:</label>
-          <input
-            type="text"
-            name="username"
-            id="username"
-            value={formData.username}
-            onChange={handleInputChange}
-          />
-          <label htmlFor="email">Email:</label>
-          <input
-            type="email"
-            name="email"
-            id="email"
-            value={formData.email}
-            onChange={handleInputChange}
-          />
-          <button type="submit">Submit</button>
-        </form>
       )}
+      {!loading &&
+        (user ? (
+          <div>
+            <h1>Welcome, {user}!</h1>
+            <h2>Friends</h2>
+            {tableData.length > 0 && (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableData.map((rowData, index) => (
+                    <tr key={index}>
+                      <td>{rowData.username}</td>
+                      <td>{rowData.email}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <div className="mt-8">
+              <h2>Orders</h2>
+              <ul>
+                {orders.map((order) => (
+                  <li key={order.id}>
+                    {dishNames[order.dishId]} - {order.user} - {order.quantity}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-8">
+              <h2>Dishes</h2>
+              <ul>
+                {dishes.map((dish) => (
+                  <li key={dish.dishId}>
+                    {dish.name} - ${dish.price} - {dish.description}
+                    <input
+                      type="number"
+                      min="1"
+                      value={quantities[dish.dishId] || 1}
+                      onChange={(e) =>
+                        handleQuantityChange(dish.dishId, e.target.value)
+                      }
+                      className="ml-2 w-16"
+                    />
+                    <button
+                      onClick={() => handleAddToOrder(dish.dishId)}
+                      className="ml-2"
+                    >
+                      Add to Order
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <label htmlFor="username">Username:</label>
+            <input
+              type="text"
+              name="username"
+              id="username"
+              value={formData.username}
+              onChange={handleInputChange}
+            />
+            <label htmlFor="email">Email:</label>
+            <input
+              type="email"
+              name="email"
+              id="email"
+              value={formData.email}
+              onChange={handleInputChange}
+            />
+            <button type="submit">Submit</button>
+          </form>
+        ))}
     </div>
   );
 };

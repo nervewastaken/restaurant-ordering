@@ -3,6 +3,18 @@ import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { db } from "@/firebase";
+import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
+
+const loadingStates = [
+  { text: "Let the developer cook with the load" },
+  { text: "He's still cooking" },
+  { text: "Honestly, I'm alone here, it's going to take time" },
+  { text: "Easter egg if the site never loads?" },
+  { text: "I (developer) think you should refresh" },
+  { text: "Start a fight" },
+  { text: "I was not serious about the easter egg" },
+  { text: "Do you feel good about yourself?" },
+];
 
 const Page = ({ params }) => {
   const { restaurant, id } = params;
@@ -11,6 +23,7 @@ const Page = ({ params }) => {
   const [email, setEmail] = useState("");
   const [pinExists, setPinExists] = useState(false);
   const [loading, setLoading] = useState(true); // Add loading state
+  const [redirecting, setRedirecting] = useState(false);
 
   const generateRandomNumber = () => {
     const randomNumber = Math.floor(Math.random() * 10000);
@@ -19,33 +32,37 @@ const Page = ({ params }) => {
   };
 
   const handlePinCreation = async () => {
+    setLoading(true); // Start loading
     const PIN = generateRandomNumber();
     console.log(PIN);
 
     try {
-      const docRef = await addDoc(
-        collection(db, "restaurants", restaurant, "tables"),
-        {
-          tid: id,
-          pin: PIN,
-        }
-      );
-      console.log("Document written with ID: ", docRef.id);
+      await addDoc(collection(db, "restaurants", restaurant, "tables"), {
+        tid: id,
+        pin: PIN,
+        stat: "active", // Ensure "active" is defined correctly
+      });
+      console.log("Document written with ID: ", id);
       setPinExists(true);
 
       localStorage.setItem("table", id);
       localStorage.setItem("restaurant", restaurant);
-      window.alert(`Your pin is ${PIN}. Redirecting...`);
+
+      // Show loader before redirect
+      setRedirecting(true);
 
       setTimeout(() => {
-        window.location.href = "/orders";
-      }, 3000);
+        window.location.href = `/orders/${restaurant}`;
+      }, 3000); // Adjust time as needed
     } catch (e) {
       console.error("Error adding document: ", e);
+    } finally {
+      setLoading(false); // Stop loading
     }
   };
 
   const fetchData = async () => {
+    setLoading(true); // Start loading
     try {
       const q = query(
         collection(db, "restaurants", restaurant, "tables"),
@@ -66,6 +83,7 @@ const Page = ({ params }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // Start loading
 
     try {
       const q = query(
@@ -76,15 +94,12 @@ const Page = ({ params }) => {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        const docRef2 = await addDoc(
-          collection(db, "restaurants", restaurant, "users"),
-          {
-            username: name,
-            email: email,
-            table: id,
-            restaurant: restaurant,
-          }
-        );
+        await addDoc(collection(db, "restaurants", restaurant, "users"), {
+          username: name,
+          email: email,
+          table: id,
+          restaurant: restaurant,
+        });
         localStorage.setItem("user", name);
         localStorage.setItem("table", id);
         localStorage.setItem("restaurant", restaurant);
@@ -99,6 +114,8 @@ const Page = ({ params }) => {
       }
     } catch (error) {
       console.error("Error fetching documents: ", error);
+    } finally {
+      setLoading(false); // Stop loading
     }
   };
 
@@ -106,8 +123,16 @@ const Page = ({ params }) => {
     fetchData();
   }, []);
 
-  if (loading) {
-    return <div className="flex justify-center">Loading...</div>; // Display loading indicator
+  if (loading || redirecting) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader
+          loadingStates={loadingStates}
+          loading={loading}
+          duration={3000}
+        />
+      </div>
+    );
   }
 
   return (
