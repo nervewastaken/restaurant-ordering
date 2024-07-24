@@ -37,6 +37,7 @@ const Page = ({ params }) => {
     console.log(PIN);
 
     try {
+     
       await addDoc(collection(db, "restaurants", restaurant, "tables"), {
         tid: id,
         pin: PIN,
@@ -104,8 +105,9 @@ const Page = ({ params }) => {
         localStorage.setItem("table", id);
         localStorage.setItem("restaurant", restaurant);
 
-        window.alert("Redirecting...");
+        
         setTimeout(() => {
+          setLoading(false); // Stop loading
           window.location.href = `/orders/${restaurant}`;
         }, 3000);
       } else {
@@ -115,7 +117,7 @@ const Page = ({ params }) => {
     } catch (error) {
       console.error("Error fetching documents: ", error);
     } finally {
-      setLoading(false); // Stop loading
+       
     }
   };
 

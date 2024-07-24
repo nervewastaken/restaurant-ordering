@@ -75,6 +75,7 @@ export default function Admin() {
             tid: doc.id,
             ...doc.data(),
           }));
+          console.log("Fetched tables:", tablesData); // Debugging
           setTableData(tablesData);
         } catch (error) {
           console.error("Error fetching tables:", error);
@@ -98,6 +99,8 @@ export default function Admin() {
             oid: doc.id,
             ...doc.data(),
           }));
+
+          console.log("Fetched orders:", ordersData); // Debugging
 
           const ordersGroupedByStatus = ordersData.reduce(
             (acc, order) => {
@@ -155,8 +158,19 @@ export default function Admin() {
         deleteDoc(doc.ref)
       );
 
+      const tableRef = collection(db, `restaurants/${restaurant}/tables`);
+      const tableQuery = query(tableRef, where("tid", "==", tableId));
+      const tablesSnapshot = await getDocs(tableQuery);
+      const deleteTablePromises = tablesSnapshot.docs.map((doc) =>
+        deleteDoc(doc.ref)
+      );
+
       // Execute all delete operations
-      await Promise.all([...deleteUserPromises, ...deleteOrderPromises]);
+      await Promise.all([
+        ...deleteUserPromises,
+        ...deleteOrderPromises,
+        ...deleteTablePromises,
+      ]);
 
       console.log(
         `All data related to table ${tableId} has been deleted successfully.`
@@ -191,6 +205,9 @@ export default function Admin() {
               </Typography>
               <Typography sx={{ mb: 1.5 }} color="text.secondary">
                 Status: {table.stat}
+              </Typography>
+              <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                Pin: {table.pin}
               </Typography>
             </CardContent>
             <CardActions>
