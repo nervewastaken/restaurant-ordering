@@ -11,6 +11,7 @@
 # testing
 /coverage
 src/app/test
+src/app/firebase.js
 # next.js
 /.next/
 /out/
