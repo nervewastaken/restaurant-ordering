@@ -12,6 +12,7 @@
 /coverage
 src/app/test
 src/app/firebase.js
+src/firebase.js
 # next.js
 /.next/
 /out/
