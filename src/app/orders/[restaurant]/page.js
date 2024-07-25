@@ -1,7 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-
-//firebase imports
 import {
   addDoc,
   collection,
@@ -11,15 +9,11 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "@/firebase";
-
-//aceternity imports
 import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
 import { IconSquareRoundedX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label"; // Adjust import as needed
-import { Input } from "@/components/ui/input"; // Adjust import as needed
-
-//mui imports
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -27,10 +21,14 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import IconButton from "@mui/material/IconButton";
+import Collapse from "@mui/material/Collapse";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import List from "@mui/joy/List";
 import ListItem from "@mui/joy/ListItem";
 import ListItemDecorator from "@mui/joy/ListItemDecorator";
-import Typography from "@mui/joy/Typography";
 
 const loadingStates = [
   {
@@ -73,7 +71,7 @@ const Page = () => {
   const [pin, setPin] = useState(null);
 
   const fetchPin = async () => {
-    setLoading(true); // Start loading
+    setLoading(true);
     try {
       const q = query(
         collection(db, "restaurants", restaurant, "tables"),
@@ -82,7 +80,6 @@ const Page = () => {
       const querySnapshot = await getDocs(q);
 
       querySnapshot.forEach((doc) => {
-        // Assuming there is only one document with the specified table ID
         if (doc.exists()) {
           const data = doc.data();
           setPin(data.pin);
@@ -95,7 +92,7 @@ const Page = () => {
     } catch (error) {
       console.error("Error fetching documents: ", error);
     } finally {
-      setLoading(false); // Set loading to false after fetching data
+      setLoading(false);
     }
   };
 
@@ -120,10 +117,10 @@ const Page = () => {
           querySnapshot.forEach((doc) => {
             data.push(doc.data());
           });
-          setTableData(data); // Update table data state
+          setTableData(data);
         } catch (error) {
           console.error("Error getting table data:", error);
-          setTableData([]); // Set empty table data on error
+          setTableData([]);
         }
       }
     };
@@ -229,6 +226,69 @@ const Page = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  //timestamp
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp.seconds * 1000);
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true, // Use false for 24-hour format
+    });
+  };
+
+  const Row = ({
+    dish,
+    quantities,
+    handleQuantityChange,
+    handleAddToOrder,
+  }) => {
+    const [open, setOpen] = React.useState(false);
+
+    return (
+      <>
+        <TableRow>
+          <TableCell>
+            <IconButton
+              aria-label="expand row"
+              size="small"
+              onClick={() => setOpen(!open)}
+            >
+              {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            </IconButton>
+          </TableCell>
+          <TableCell>{dish.name}</TableCell>
+          <TableCell>{dish.price}</TableCell>
+          <TableCell>
+            <input
+              type="number"
+              min="1"
+              value={quantities[dish.dishId] || 1}
+              onChange={(e) =>
+                handleQuantityChange(dish.dishId, e.target.value)
+              }
+            />
+            <button
+              onClick={() => handleAddToOrder(dish.dishId)}
+              className="ml-2"
+            >
+              Add to Order
+            </button>
+          </TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+            <Collapse in={open} timeout="auto" unmountOnExit>
+              <Box margin={1}>
+                <Typography variant="body2">{dish.description}</Typography>
+              </Box>
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      </>
+    );
+  };
+
   return (
     <div className="relative">
       {loading && (
@@ -249,17 +309,18 @@ const Page = () => {
       {!loading &&
         (user ? (
           <div className="p-10">
-            <div className="sm:text-xl md:text-2xl lg:text-4xl">
-              Welcome to {restaurant}!
+            <div className=" flex justify-between px-24">
+              <span className="sm:text-xl md:text-2xl lg:text-3xl text-gray-400">Welcome to {restaurant}!</span>
+              <div className="px-24 pb-4">
+                <button className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
+                  Request for bill
+                </button>
+              </div>
             </div>
             <div className="flex flex-col justify-center items-center sm:text-xl md:text-2xl lg:text-3xl">
               <h1>
-                <span className="font-semibold text-fuchsia-600">{user}!</span>{" "}
-                We&apos;re Delighted to have you
-              </h1>
-              <h1>
-                Your Pin is :{" "}
-                <span className="font-semibold text-fuchsia-600">{pin}</span>
+                Hey {user} your pin is
+                <span className="font-semibold text-fuchsia-600"> {pin}</span>
               </h1>
             </div>
             <div className="flex gap-4 pt-24">
@@ -304,7 +365,6 @@ const Page = () => {
                 <h1 className="text-blue-900">
                   Here&apos;s what you can do now
                   <div>
-                    
                     <List aria-labelledby="decorated-list-demo">
                       <ListItem>
                         <ListItemDecorator>❤️</ListItemDecorator> Add your own
@@ -318,113 +378,102 @@ const Page = () => {
                         everyone pays their share fairly
                       </ListItem>
                       <ListItem>
-                        <ListItemDecorator>🥓</ListItemDecorator> Is your brain hungry after reading all that text above? Scroll down to start ordering right now!
+                        <ListItemDecorator>🥓</ListItemDecorator> Is your brain
+                        hungry after reading all that text above? Scroll down to
+                        start ordering right now!
                       </ListItem>
                     </List>
                   </div>
-                
                 </h1>
               </div>
             </div>
-
-            <div className="mt-8">
-              <h2>Orders</h2>
-              <ul>
-                {orders.map((order) => (
-                  <li key={order.id}>
-                    {dishNames[order.dishId]} - {order.user} - {order.quantity}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="mt-8">
-              <h2>Dishes</h2>
-              <ul>
-                {dishes.map((dish) => (
-                  <li key={dish.dishId}>
-                    {dish.name} - ${dish.price} - {dish.description}
-                    <input
-                      type="number"
-                      min="1"
-                      value={quantities[dish.dishId] || 1}
-                      onChange={(e) =>
-                        handleQuantityChange(dish.dishId, e.target.value)
-                      }
-                      className="ml-2 w-16"
-                    />
-                    <button
-                      onClick={() => handleAddToOrder(dish.dishId)}
-                      className="ml-2"
-                    >
-                      Add to Order
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <button>Generate Bill</button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+              <div>
+                <h2 className="font-semibold text-xl mb-2">Current Orders:</h2>
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Dish</TableCell>
+                        <TableCell>Quantity</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Time</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell>{dishNames[order.dishId]}</TableCell>
+                          <TableCell>{order.quantity}</TableCell>
+                          <TableCell>
+                            {order.done ? "Done" : "Pending"}
+                          </TableCell>
+                          <TableCell>{formatTime(order.timestamp)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </div>
+              <div>
+                <h2 className="font-semibold text-xl mb-2">Menu:</h2>
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell />
+                        <TableCell>Dish</TableCell>
+                        <TableCell>Price</TableCell>
+                        <TableCell>Action</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {dishes.map((dish) => (
+                        <Row
+                          key={dish.dishId}
+                          dish={dish}
+                          quantities={quantities}
+                          handleQuantityChange={handleQuantityChange}
+                          handleAddToOrder={handleAddToOrder}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="w-full max-w-md mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Join Room</h1>
-            <form onSubmit={handleSubmit}>
-              <div className="">
-                <LabelInputContainer className="mb-4">
-                  <Label htmlFor="username">Username:</Label>
-                  <Input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </LabelInputContainer>
-                <LabelInputContainer className="mb-4">
-                  <Label htmlFor="email">Email:</Label>
-                  <Input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </LabelInputContainer>
-                <button
-                  className="bg-gradient-to-br relative group/btn from-black dark:from-zinc-900 dark:to-zinc-900 to-neutral-600 block dark:bg-zinc-800 w-full text-white rounded-md h-10 font-medium shadow-[0px_1px_0px_0px_#ffffff40_inset,0px_-1px_0px_0px_#ffffff40_inset] dark:shadow-[0px_1px_0px_0px_var(--zinc-800)_inset,0px_-1px_0px_0px_var(--zinc-800)_inset]"
-                  type="submit"
-                >
-                  Join in &rarr;
-                  <BottomGradient />
-                </button>
-              </div>
+          <div className="flex flex-col justify-center items-center min-h-screen">
+            <h1 className="text-2xl mb-4">Join the Room</h1>
+            <form onSubmit={handleSubmit} className="w-64">
+              <Label>Username</Label>
+              <Input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                required
+              />
+              <Label>Email</Label>
+              <Input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+              />
+              <button
+                type="submit"
+                className="mt-4 w-full bg-blue-500 text-white p-2 rounded"
+              >
+                Join
+              </button>
             </form>
           </div>
         ))}
-      <BottomGradient />
     </div>
   );
 };
 
 export default Page;
-
-const BottomGradient = () => {
-  return (
-    <>
-      <span className="group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-cyan-500 to-transparent" />
-      <span className="group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
-    </>
-  );
-};
-
-const LabelInputContainer = ({ children, className }) => {
-  return (
-    <div className={cn("flex flex-col space-y-2 w-full", className)}>
-      {children}
-    </div>
-  );
-};

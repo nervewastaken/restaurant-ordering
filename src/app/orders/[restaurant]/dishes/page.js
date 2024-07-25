@@ -83,6 +83,7 @@ const DishManager = () => {
         name: newDish.name,
         price: newDish.price,
         description: newDish.description,
+      
       });
 
       setNewDish({ name: "", price: "", description: "" });

@@ -25,6 +25,12 @@ const Page = ({ params }) => {
   const [loading, setLoading] = useState(true); // Add loading state
   const [redirecting, setRedirecting] = useState(false);
 
+  useEffect(() => {
+    localStorage.removeItem("table");
+    localStorage.removeItem("restaurant");
+    localStorage.removeItem("user");
+  }, []);
+
   const generateRandomNumber = () => {
     const randomNumber = Math.floor(Math.random() * 10000);
     const fourDigitNumber = randomNumber.toString().padStart(4, "0");
@@ -37,7 +43,6 @@ const Page = ({ params }) => {
     console.log(PIN);
 
     try {
-     
       await addDoc(collection(db, "restaurants", restaurant, "tables"), {
         tid: id,
         pin: PIN,
@@ -105,7 +110,6 @@ const Page = ({ params }) => {
         localStorage.setItem("table", id);
         localStorage.setItem("restaurant", restaurant);
 
-        
         setTimeout(() => {
           setLoading(false); // Stop loading
           window.location.href = `/orders/${restaurant}`;
@@ -117,7 +121,6 @@ const Page = ({ params }) => {
     } catch (error) {
       console.error("Error fetching documents: ", error);
     } finally {
-       
     }
   };
 

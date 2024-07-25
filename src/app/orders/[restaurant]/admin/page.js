@@ -195,10 +195,10 @@ export default function Admin() {
         </Button>
       </div>
 
-      <h2>Active Tables</h2>
+      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">Active Tables</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
         {tableData.map((table) => (
-          <Card key={table.tid} sx={{ minWidth: 275 }}>
+          <Card key={table.tid} sx={{ minWidth: 200 }}>
             <CardContent>
               <Typography variant="h5" component="div">
                 Table ID: {table.tid}
@@ -222,7 +222,7 @@ export default function Admin() {
           </Card>
         ))}
       </div>
-      <h2>Pending Orders</h2>
+      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">Pending Orders</h2>
       <div className="px-4">
         {Object.keys(orderData.pending).map((table) => (
           <Card key={table} sx={{ minWidth: 275, mb: 2 }}>
@@ -266,7 +266,7 @@ export default function Admin() {
           </Card>
         ))}
       </div>
-      <h2>Completed Orders</h2>
+      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">Completed Orders</h2>
       <div>
         {Object.keys(orderData.completed).map((table) => (
           <Card key={table} sx={{ minWidth: 275, mb: 2 }}>
