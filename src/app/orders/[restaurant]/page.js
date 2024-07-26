@@ -7,6 +7,8 @@ import {
   query,
   where,
   orderBy,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
@@ -85,9 +87,8 @@ const Page = () => {
           setPin(data.pin);
         }
       });
-
       if (!querySnapshot.empty) {
-        setPinExists(true);
+        console.log("Snapshot Empty");
       }
     } catch (error) {
       console.error("Error fetching documents: ", error);
@@ -161,7 +162,7 @@ const Page = () => {
   const fetchOrders = async () => {
     try {
       const ordersRef = collection(db, `restaurants/${restaurant}/orders`);
-      const q = query(ordersRef, orderBy("timestamp", "desc"));
+      const q = query(ordersRef, where("table", "==", table));
       const querySnapshot = await getDocs(q);
       const ordersList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -237,6 +238,33 @@ const Page = () => {
     });
   };
 
+  const handleBilling = async () => {
+    try {
+      // Create a query to find the document where tid matches the table
+      const q = query(
+        collection(db, `restaurants/${restaurant}/tables`),
+        where("tid", "==", table)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // Assuming there's only one matching document
+        const tableDoc = querySnapshot.docs[0];
+        const tableRef = tableDoc.ref;
+
+        // Update the document's stat field
+        await updateDoc(tableRef, { stat: "requesting bill" });
+
+        // Redirect to the billing page
+        window.location.href = `/orders/${restaurant}/billing`;
+      } else {
+        console.error("No matching table document found.");
+      }
+    } catch (error) {
+      console.error("Error updating table status:", error);
+    }
+  };
+
   const Row = ({
     dish,
     quantities,
@@ -310,9 +338,14 @@ const Page = () => {
         (user ? (
           <div className="p-10">
             <div className=" flex justify-between px-24">
-              <span className="sm:text-xl md:text-2xl lg:text-3xl text-gray-400">Welcome to {restaurant}!</span>
+              <span className="sm:text-xl md:text-2xl lg:text-3xl text-gray-400">
+                Welcome to {restaurant}!
+              </span>
               <div className="px-24 pb-4">
-                <button className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
+                <button
+                  onClick={handleBilling}
+                  className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+                >
                   Request for bill
                 </button>
               </div>
@@ -465,9 +498,9 @@ const Page = () => {
               />
               <button
                 type="submit"
-                className="mt-4 w-full bg-blue-500 text-white p-2 rounded"
+                className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
               >
-                Join
+                Join the room
               </button>
             </form>
           </div>

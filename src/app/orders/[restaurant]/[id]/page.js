@@ -26,10 +26,12 @@ const Page = ({ params }) => {
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    localStorage.removeItem("table");
-    localStorage.removeItem("restaurant");
-    localStorage.removeItem("user");
-  }, []);
+    localStorage.removeItem('table');
+    localStorage.removeItem('restaurant');
+    localStorage.removeItem('user');
+  }, []); 
+
+
 
   const generateRandomNumber = () => {
     const randomNumber = Math.floor(Math.random() * 10000);
@@ -43,6 +45,7 @@ const Page = ({ params }) => {
     console.log(PIN);
 
     try {
+     
       await addDoc(collection(db, "restaurants", restaurant, "tables"), {
         tid: id,
         pin: PIN,
@@ -110,6 +113,7 @@ const Page = ({ params }) => {
         localStorage.setItem("table", id);
         localStorage.setItem("restaurant", restaurant);
 
+        
         setTimeout(() => {
           setLoading(false); // Stop loading
           window.location.href = `/orders/${restaurant}`;
@@ -121,6 +125,7 @@ const Page = ({ params }) => {
     } catch (error) {
       console.error("Error fetching documents: ", error);
     } finally {
+       
     }
   };
 
@@ -166,15 +171,15 @@ const Page = ({ params }) => {
             placeholder="Pin"
             className="mt-4 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
-          <Button type="submit" className="mt-4">
-            Join Room
-          </Button>
+          <button type="submit" className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
+                  Join Room
+                </button>
         </form>
       ) : (
         <div className="max-w-lg w-full">
-          <Button onClick={handlePinCreation} className="mt-4">
-            Generate Pin
-          </Button>
+          <button onClick={handlePinCreation} className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
+                  Generate a pin
+                </button>
         </div>
       )}
     </div>
