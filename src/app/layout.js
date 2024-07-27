@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import AuthContextProvider from "./authcontext/authcontext";
 import Hero from "@/components/hero";
+require("dotenv").config();
 
 const inter = Inter({ subsets: ["latin"] });
 

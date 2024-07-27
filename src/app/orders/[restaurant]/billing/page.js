@@ -179,58 +179,93 @@ const Page = () => {
     return Math.random().toString(36).substring(2, 14);
   };
 
-  const renderBillCard = (title, items, subtotal, taxAmount, serviceChargeAmount, total, ref = null) => {
+  const renderBillCard = (
+    title,
+    items,
+    subtotal,
+    taxAmount,
+    serviceChargeAmount,
+    total,
+    ref = null
+  ) => {
     return (
-      <Card style={{ marginBottom: '20px' }} ref={ref}>
-        <CardContent>
-          <Typography variant="h5" align="center">
-            {restaurantName}
-          </Typography>
-          <Typography variant="subtitle2" align="center" style={{ fontFamily: 'Courier New', marginBottom: '10px' }}>
-            Tax Invoice - {title}
-          </Typography>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Dish Name</TableCell>
-                  <TableCell align="right">Price</TableCell>
-                  <TableCell align="right">Quantity</TableCell>
-                  <TableCell align="right">Total Price</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {items.map((dish, index) => (
-                  <TableRow key={index} style={{ borderBottom: '1px dotted rgba(224, 224, 224, 1)' }}>
-                    <TableCell>{dish.name}</TableCell>
-                    <TableCell align="right">{dish.price.toFixed(2)}</TableCell>
-                    <TableCell align="right">{dish.quantity}</TableCell>
-                    <TableCell align="right">{dish.totalPrice.toFixed(2)}</TableCell>
+      <div className="flex justify-center items-center">
+        <Card style={{ marginBottom: "20px" }} ref={ref} className="w-[500px]">
+          <CardContent>
+            <Typography variant="h5" align="center">
+              {restaurantName}
+            </Typography>
+            <Typography
+              variant="subtitle2"
+              align="center"
+              style={{ fontFamily: "Courier New", marginBottom: "10px" }}
+            >
+              Tax Invoice - {title}
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Dish Name</TableCell>
+                    <TableCell align="right">Price</TableCell>
+                    <TableCell align="right">Quantity</TableCell>
+                    <TableCell align="right">Total Price</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <Typography variant="body1" align="right" style={{ marginTop: '20px' }}>
-            Subtotal: {subtotal.toFixed(2)}
-          </Typography>
-          <Typography variant="body1" align="right">
-            Tax ({(taxRate * 100).toFixed(2)}%): {taxAmount.toFixed(2)}
-          </Typography>
-          <Typography variant="body1" align="right">
-            Service Charge ({(serviceChargeRate * 100).toFixed(2)}%): {serviceChargeAmount.toFixed(2)}
-          </Typography>
-          <Typography variant="h6" align="right" style={{ marginTop: '10px' }}>
-            Grand Total: {total.toFixed(2)}
-          </Typography>
-          <Typography variant="body2" align="center" style={{ marginTop: '20px' }}>
-            Thank you, visit again!
-          </Typography>
-        </CardContent>
-      </Card>
+                </TableHead>
+                <TableBody>
+                  {items.map((dish, index) => (
+                    <TableRow
+                      key={index}
+                      style={{
+                        borderBottom: "1px dotted rgba(224, 224, 224, 1)",
+                      }}
+                    >
+                      <TableCell>{dish.name}</TableCell>
+                      <TableCell align="right">
+                        {dish.price.toFixed(2)}
+                      </TableCell>
+                      <TableCell align="right">{dish.quantity}</TableCell>
+                      <TableCell align="right">
+                        {dish.totalPrice.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <Typography
+              variant="body1"
+              align="right"
+              style={{ marginTop: "20px" }}
+            >
+              Subtotal: {subtotal.toFixed(2)}
+            </Typography>
+            <Typography variant="body1" align="right">
+              Tax ({(taxRate * 100).toFixed(2)}%): {taxAmount.toFixed(2)}
+            </Typography>
+            <Typography variant="body1" align="right">
+              Service Charge ({(serviceChargeRate * 100).toFixed(2)}%):{" "}
+              {serviceChargeAmount.toFixed(2)}
+            </Typography>
+            <Typography
+              variant="h6"
+              align="right"
+              style={{ marginTop: "10px" }}
+            >
+              Grand Total: {total.toFixed(2)}
+            </Typography>
+            <Typography
+              variant="body2"
+              align="center"
+              style={{ marginTop: "20px" }}
+            >
+              Thank you, visit again!
+            </Typography>
+          </CardContent>
+        </Card>
+      </div>
     );
   };
-
 
   const renderUnifiedBill = () => {
     const allDishes = Object.values(userTotals).flat();
@@ -239,7 +274,7 @@ const Page = () => {
     const serviceChargeAmount = subtotal * serviceChargeRate;
 
     return (
-      <>
+      <div className="flex justify-center items-center">
         {renderBillCard(
           "Unified Bill",
           allDishes,
@@ -249,15 +284,7 @@ const Page = () => {
           overallTotalPrice,
           componentRef
         )}
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={handlePrint}
-          style={{ marginTop: "20px" }}
-        >
-          Print/Download Bill
-        </Button>
-      </>
+      </div>
     );
   };
 
@@ -314,6 +341,15 @@ const Page = () => {
         {showSplit ? "Show Unified Bill" : "Show Split Bill"}
       </Button>
       {showSplit ? renderSplitBill() : renderUnifiedBill()}
+
+      <Button
+        variant="contained"
+        color="secondary"
+        onClick={handlePrint}
+        style={{ marginTop: "20px" }}
+      >
+        Print/Download Bill
+      </Button>
     </>
   );
 

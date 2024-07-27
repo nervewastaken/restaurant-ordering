@@ -50,18 +50,16 @@ const loadingStates = [
   },
 ];
 
-export default function Admin() {
-  const [user, setUser] = useState(null);
-  const [restaurant, setRestaurant] = useState(null);
+export default function Admin({ restaurantParam }) {
   const [tableData, setTableData] = useState([]);
   const [orderData, setOrderData] = useState({ pending: {}, completed: {} });
   const [loading, setLoading] = useState(false);
+  const [dishDetails, setDishDetails] = useState(null);
+  const [restaurant, setRestaurant] = useState(restaurantParam);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setUser(localStorage.getItem("user"));
-      setRestaurant(localStorage.getItem("restaurant"));
-    }
+    const storedRestaurant = localStorage.getItem("restaurant");
+    setRestaurant(storedRestaurant);
   }, []);
 
   useEffect(() => {
@@ -71,6 +69,7 @@ export default function Admin() {
         try {
           const tablesRef = collection(db, `restaurants/${restaurant}/tables`);
           const tablesSnapshot = await getDocs(tablesRef);
+          console.log(tablesSnapshot);
           const tablesData = tablesSnapshot.docs.map((doc) => ({
             tid: doc.id,
             ...doc.data(),
@@ -88,46 +87,74 @@ export default function Admin() {
     fetchTables();
   }, [restaurant]);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      if (restaurant) {
-        setLoading(true);
-        try {
-          const ordersRef = collection(db, `restaurants/${restaurant}/orders`);
-          const ordersSnapshot = await getDocs(ordersRef);
-          const ordersData = ordersSnapshot.docs.map((doc) => ({
-            oid: doc.id,
-            ...doc.data(),
-          }));
+  const fetchOrders = async () => {
+    if (restaurant) {
+      setLoading(true);
+      try {
+        const ordersRef = collection(db, `restaurants/${restaurant}/orders`);
+        const ordersSnapshot = await getDocs(ordersRef);
+        const ordersData = ordersSnapshot.docs.map((doc) => ({
+          oid: doc.id,
+          ...doc.data(),
+        }));
 
-          console.log("Fetched orders:", ordersData); // Debugging
+        console.log("Fetched orders:", ordersData); // Debugging
 
-          const ordersGroupedByStatus = ordersData.reduce(
-            (acc, order) => {
-              const table = order.table;
-              const status = order.done ? "completed" : "pending";
+        const dishIds = new Set();
+        ordersData.forEach((order) => {
+          dishIds.add(order.dishId);
+        });
 
-              if (!acc[status][table]) {
-                acc[status][table] = [];
-              }
+        // Fetch dish details
+        const dishesCollection = collection(
+          db,
+          `restaurants/${restaurant}/dishes`
+        );
+        const dishesSnapshot = await getDocs(dishesCollection);
 
-              acc[status][table].push(order);
-              return acc;
-            },
-            { pending: {}, completed: {} }
-          );
+        const fetchedDishDetails = {};
+        dishesSnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (dishIds.has(data.dishId)) {
+            fetchedDishDetails[data.dishId] = {
+              name: data.name,
+              price: Number(data.price) || 0,
+            };
+          }
+        });
+        console.log(dishesSnapshot);
 
-          setOrderData(ordersGroupedByStatus);
-        } catch (error) {
-          console.error("Error fetching orders:", error);
-        } finally {
-          setLoading(false);
-        }
+        setDishDetails(fetchedDishDetails);
+
+        const ordersGroupedByStatus = ordersData.reduce(
+          (acc, order) => {
+            const table = order.table;
+            const status = order.done ? "completed" : "pending";
+
+            if (!acc[status][table]) {
+              acc[status][table] = [];
+            }
+
+            acc[status][table].push(order);
+            return acc;
+          },
+          { pending: {}, completed: {} }
+        );
+
+        setOrderData(ordersGroupedByStatus);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      } finally {
+        setLoading(false);
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     fetchOrders();
   }, [restaurant]);
+
+  console.log(orderData);
 
   const handleMarkAsDone = async (orderId, table) => {
     try {
@@ -185,6 +212,8 @@ export default function Admin() {
     }
   };
 
+  console.log(dishDetails);
+
   return (
     <div className="justify-center items-center">
       <Loader loadingStates={loadingStates} loading={loading} duration={2000} />
@@ -195,7 +224,9 @@ export default function Admin() {
         </Button>
       </div>
 
-      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">Active Tables</h2>
+      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
+        Active Tables
+      </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
         {tableData.map((table) => (
           <Card key={table.tid} sx={{ minWidth: 200 }}>
@@ -222,7 +253,9 @@ export default function Admin() {
           </Card>
         ))}
       </div>
-      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">Pending Orders</h2>
+      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
+        Pending Orders
+      </h2>
       <div className="px-4">
         {Object.keys(orderData.pending).map((table) => (
           <Card key={table} sx={{ minWidth: 275, mb: 2 }}>
@@ -230,43 +263,59 @@ export default function Admin() {
               <Typography variant="h5" component="div" className="">
                 Orders for Table {table}
               </Typography>
-              {orderData.pending[table].map((order) => (
-                <Box
-                  key={order.oid}
-                  sx={{
-                    border: 1,
-                    borderColor: "grey.300",
-                    p: 2,
-                    mb: 2,
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography variant="body2">
-                    Dish ID: {order.dishId}
-                  </Typography>
-                  <Typography variant="body2">
-                    Quantity: {order.quantity}
-                  </Typography>
-                  <Typography variant="body2">
-                    Timestamp:{" "}
-                    {new Date(
-                      order.timestamp.seconds * 1000
-                    ).toLocaleTimeString()}
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleMarkAsDone(order.oid, table)}
+              {orderData.pending[table].map((order) => {
+                const dishDetail = dishDetails[order.dishId] || {};
+                const dishName = dishDetail.name || "Unknown";
+                const dishPrice = dishDetail.price || 0;
+                const totalPrice = dishPrice * order.quantity;
+
+                return (
+                  <Box
+                    key={order.oid}
+                    sx={{
+                      border: 1,
+                      borderColor: "grey.300",
+                      p: 2,
+                      mb: 2,
+                      borderRadius: 2,
+                    }}
                   >
-                    Mark as Done
-                  </Button>
-                </Box>
-              ))}
+                    <Typography variant="body2">
+                      Dish ID: {order.dishId}
+                    </Typography>
+                    <Typography variant="body2">
+                      Dish Name: {dishName}
+                    </Typography>
+                    <Typography variant="body2">Price: {dishPrice}</Typography>
+                    <Typography variant="body2">
+                      Total Price: {totalPrice}
+                    </Typography>
+                    <Typography variant="body2">
+                      Quantity: {order.quantity}
+                    </Typography>
+                    <Typography variant="body2">
+                      Timestamp:{" "}
+                      {new Date(
+                        order.timestamp.seconds * 1000
+                      ).toLocaleTimeString()}
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleMarkAsDone(order.oid, table)}
+                    >
+                      Mark as Done
+                    </Button>
+                  </Box>
+                );
+              })}
             </CardContent>
           </Card>
         ))}
       </div>
-      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">Completed Orders</h2>
+      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
+        Completed Orders
+      </h2>
       <div>
         {Object.keys(orderData.completed).map((table) => (
           <Card key={table} sx={{ minWidth: 275, mb: 2 }}>
@@ -274,25 +323,39 @@ export default function Admin() {
               <Typography variant="h5" component="div">
                 Completed Orders for Table {table}
               </Typography>
-              {orderData.completed[table].map((order) => (
-                <Box
-                  key={order.oid}
-                  sx={{
-                    border: 1,
-                    borderColor: "grey.300",
-                    p: 2,
-                    mb: 2,
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography variant="body2">
-                    Dish ID: {order.dishId}
-                  </Typography>
-                  <Typography variant="body2">
-                    Quantity: {order.quantity}
-                  </Typography>
-                </Box>
-              ))}
+              {orderData.completed[table].map((order) => {
+                const dishDetail = dishDetails[order.dishId] || {};
+                const dishName = dishDetail.name || "Unknown";
+                const dishPrice = dishDetail.price || 0;
+                const totalPrice = dishPrice * order.quantity;
+
+                return (
+                  <Box
+                    key={order.oid}
+                    sx={{
+                      border: 1,
+                      borderColor: "grey.300",
+                      p: 2,
+                      mb: 2,
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography variant="body2">
+                      Dish ID: {order.dishId}
+                    </Typography>
+                    <Typography variant="body2">
+                      Dish Name: {dishName}
+                    </Typography>
+                    <Typography variant="body2">Price: {dishPrice}</Typography>
+                    <Typography variant="body2">
+                      Total Price: {totalPrice}
+                    </Typography>
+                    <Typography variant="body2">
+                      Quantity: {order.quantity}
+                    </Typography>
+                  </Box>
+                );
+              })}
             </CardContent>
           </Card>
         ))}
