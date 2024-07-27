@@ -7,8 +7,8 @@ import {
   query,
   where,
   orderBy,
-  doc,
   updateDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
@@ -33,30 +33,14 @@ import ListItem from "@mui/joy/ListItem";
 import ListItemDecorator from "@mui/joy/ListItemDecorator";
 
 const loadingStates = [
-  {
-    text: "Let the developer cook with the load",
-  },
-  {
-    text: "He's still cooking",
-  },
-  {
-    text: "Honestly, I'm alone here, it's going to take time",
-  },
-  {
-    text: "easter egg if the site never loads?",
-  },
-  {
-    text: "I (developer) think you should refresh",
-  },
-  {
-    text: "Start a fight",
-  },
-  {
-    text: "I was not serious about the easter egg",
-  },
-  {
-    text: "Do you feel good about yourself",
-  },
+  { text: "Let the developer cook with the load" },
+  { text: "He's still cooking" },
+  { text: "Honestly, I'm alone here, it's going to take time" },
+  { text: "easter egg if the site never loads?" },
+  { text: "I (developer) think you should refresh" },
+  { text: "Start a fight" },
+  { text: "I was not serious about the easter egg" },
+  { text: "Do you feel good about yourself" },
 ];
 
 const Page = () => {
@@ -72,31 +56,6 @@ const Page = () => {
   const [loading, setLoading] = useState(true);
   const [pin, setPin] = useState(null);
 
-  const fetchPin = async () => {
-    setLoading(true);
-    try {
-      const q = query(
-        collection(db, "restaurants", restaurant, "tables"),
-        where("tid", "==", table)
-      );
-      const querySnapshot = await getDocs(q);
-
-      querySnapshot.forEach((doc) => {
-        if (doc.exists()) {
-          const data = doc.data();
-          setPin(data.pin);
-        }
-      });
-      if (!querySnapshot.empty) {
-        console.log("Snapshot Empty");
-      }
-    } catch (error) {
-      console.error("Error fetching documents: ", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       setUser(localStorage.getItem("user"));
@@ -106,75 +65,104 @@ const Page = () => {
   }, []);
 
   useEffect(() => {
-    const getTableData = async () => {
-      if (restaurant && table) {
-        try {
-          const q = query(
-            collection(db, "restaurants", restaurant, "users"),
-            where("table", "==", table)
-          );
-          const querySnapshot = await getDocs(q);
-          const data = [];
-          querySnapshot.forEach((doc) => {
-            data.push(doc.data());
-          });
+    let unsubscribeTableData,
+      unsubscribeDishes,
+      unsubscribeOrders,
+      unsubscribePin;
+
+    if (restaurant && table) {
+      // Table data
+      unsubscribeTableData = onSnapshot(
+        query(
+          collection(db, "restaurants", restaurant, "users"),
+          where("table", "==", table)
+        ),
+        (snapshot) => {
+          const data = snapshot.docs.map((doc) => doc.data());
           setTableData(data);
-        } catch (error) {
+        },
+        (error) => {
           console.error("Error getting table data:", error);
           setTableData([]);
         }
-      }
-    };
+      );
 
-    getTableData();
+      // Dishes
+      unsubscribeDishes = onSnapshot(
+        query(
+          collection(db, `restaurants/${restaurant}/dishes`),
+          orderBy("dishId", "asc")
+        ),
+        (snapshot) => {
+          const dishesList = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          const names = dishesList.reduce((acc, dish) => {
+            acc[dish.dishId] = dish.name;
+            return acc;
+          }, {});
+          setDishes(dishesList);
+          setDishNames(names);
+        },
+        (error) => {
+          console.error("Error fetching dishes:", error);
+        }
+      );
+
+      // Orders
+      unsubscribeOrders = onSnapshot(
+        query(
+          collection(db, `restaurants/${restaurant}/orders`),
+          where("table", "==", table)
+        ),
+        (snapshot) => {
+          const ordersList = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setOrders(ordersList);
+        },
+        (error) => {
+          console.error("Error fetching orders:", error);
+        }
+      );
+
+      // Pin
+      unsubscribePin = onSnapshot(
+        query(
+          collection(db, "restaurants", restaurant, "tables"),
+          where("tid", "==", table)
+        ),
+        (snapshot) => {
+          snapshot.forEach((doc) => {
+            if (doc.exists()) {
+              setPin(doc.data().pin);
+            }
+          });
+          if (snapshot.empty) {
+            console.log("No matching documents.");
+          }
+        },
+        (error) => {
+          console.error("Error fetching documents: ", error);
+        }
+      );
+    }
+
+    return () => {
+      unsubscribeTableData && unsubscribeTableData();
+      unsubscribeDishes && unsubscribeDishes();
+      unsubscribeOrders && unsubscribeOrders();
+      unsubscribePin && unsubscribePin();
+    };
   }, [restaurant, table]);
 
   useEffect(() => {
-    if (restaurant) {
-      fetchDishes();
-      fetchOrders();
-      fetchPin();
-    }
-  }, [restaurant]);
-
-  const fetchDishes = async () => {
-    try {
-      const dishesRef = collection(db, `restaurants/${restaurant}/dishes`);
-      const q = query(dishesRef, orderBy("dishId", "asc"));
-      const querySnapshot = await getDocs(q);
-      const dishesList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      const names = {};
-      dishesList.forEach((dish) => {
-        names[dish.dishId] = dish.name;
-      });
-      setDishes(dishesList);
-      setDishNames(names);
-    } catch (error) {
-      console.error("Error fetching dishes:", error);
-    } finally {
+    if (restaurant && table && dishes.length > 0 && pin !== null) {
       setLoading(false);
     }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      const ordersRef = collection(db, `restaurants/${restaurant}/orders`);
-      const q = query(ordersRef, where("table", "==", table));
-      const querySnapshot = await getDocs(q);
-      const ordersList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setOrders(ordersList);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [restaurant, table, dishes, pin]);
 
   const handleAddToOrder = async (dishId) => {
     if (!user) {
@@ -189,10 +177,9 @@ const Page = () => {
         user,
         timestamp: new Date(),
         quantity: parseInt(quantities[dishId]) || 1,
-        table: table,
+        table,
         done: false,
       });
-      fetchOrders();
     } catch (error) {
       console.error("Error adding to order:", error);
     }
@@ -212,12 +199,11 @@ const Page = () => {
       await addDoc(usersRef, {
         username: formData.username,
         email: formData.email,
-        table: table,
-        restaurant: restaurant,
+        table,
+        restaurant,
       });
       setUser(formData.username);
       localStorage.setItem("user", formData.username);
-      window.location.reload();
     } catch (error) {
       console.error("Error adding user:", error);
     }
@@ -227,20 +213,18 @@ const Page = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  //timestamp
   const formatTime = (timestamp) => {
     const date = new Date(timestamp.seconds * 1000);
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
-      hour12: true, // Use false for 24-hour format
+      hour12: true,
     });
   };
 
   const handleBilling = async () => {
     try {
-      // Create a query to find the document where tid matches the table
       const q = query(
         collection(db, `restaurants/${restaurant}/tables`),
         where("tid", "==", table)
@@ -248,14 +232,9 @@ const Page = () => {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        // Assuming there's only one matching document
         const tableDoc = querySnapshot.docs[0];
         const tableRef = tableDoc.ref;
-
-        // Update the document's stat field
         await updateDoc(tableRef, { stat: "requesting bill" });
-
-        // Redirect to the billing page
         window.location.href = `/orders/${restaurant}/billing`;
       } else {
         console.error("No matching table document found.");
@@ -265,13 +244,10 @@ const Page = () => {
     }
   };
 
-  const Row = ({
-    dish,
-    quantities,
-    handleQuantityChange,
-    handleAddToOrder,
-  }) => {
-    const [open, setOpen] = React.useState(false);
+  console.log(loading);
+
+  const Row = ({ dish }) => {
+    const [open, setOpen] = useState(false);
 
     return (
       <>
@@ -356,7 +332,7 @@ const Page = () => {
                 <span className="font-semibold text-fuchsia-600"> {pin}</span>
               </h1>
             </div>
-            <div className="flex gap-4 pt-24">
+            <div className="flex gap-4 pt-24 sm:flex-col md:flex-row lg:flex-row">
               <div>
                 <h2 className="mb-2">Friends</h2>
                 {tableData.length > 0 && (
@@ -428,6 +404,7 @@ const Page = () => {
                     <TableHead>
                       <TableRow>
                         <TableCell>Dish</TableCell>
+                        <TableCell>User</TableCell>
                         <TableCell>Quantity</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell>Time</TableCell>
@@ -437,6 +414,7 @@ const Page = () => {
                       {orders.map((order) => (
                         <TableRow key={order.id}>
                           <TableCell>{dishNames[order.dishId]}</TableCell>
+                          <TableCell>{order.user}</TableCell>
                           <TableCell>{order.quantity}</TableCell>
                           <TableCell>
                             {order.done ? "Done" : "Pending"}

@@ -8,6 +8,7 @@ import {
   query,
   where,
   deleteDoc,
+  onSnapshot
 } from "firebase/firestore";
 import { db } from "@/firebase";
 import { UserAuth } from "@/app/authcontext/authcontext";
@@ -74,105 +75,107 @@ export default function Admin({ restaurantParam }) {
   }, []);
 
   useEffect(() => {
-    const fetchTables = async () => {
-      if (restaurant) {
-        setLoading(true);
-        try {
-          const tablesRef = collection(db, `restaurants/${restaurant}/tables`);
-          const tablesSnapshot = await getDocs(tablesRef);
-          console.log(tablesSnapshot);
-          const tablesData = tablesSnapshot.docs.map((doc) => ({
+    let unsubscribeTables;
+    let unsubscribeOrders;
+    let unsubscribeDishes;
+
+    if (restaurant) {
+      setLoading(true);
+
+      // Listen for table changes
+      const tablesRef = collection(db, `restaurants/${restaurant}/tables`);
+      unsubscribeTables = onSnapshot(
+        tablesRef,
+        (snapshot) => {
+          const tablesData = snapshot.docs.map((doc) => ({
             tid: doc.id,
             ...doc.data(),
           }));
-          console.log("Fetched tables:", tablesData); // Debugging
+          console.log("Fetched tables:", tablesData);
           setTableData(tablesData);
-        } catch (error) {
+        },
+        (error) => {
           console.error("Error fetching tables:", error);
-        } finally {
-          setLoading(false);
         }
-      }
-    };
+      );
 
-    fetchTables();
-  }, [restaurant]);
+      // Listen for order changes
+      const ordersRef = collection(db, `restaurants/${restaurant}/orders`);
+      unsubscribeOrders = onSnapshot(
+        ordersRef,
+        (snapshot) => {
+          const ordersData = snapshot.docs.map((doc) => ({
+            oid: doc.id,
+            ...doc.data(),
+          }));
 
-  const fetchOrders = async () => {
-    if (restaurant) {
-      setLoading(true);
-      try {
-        const ordersRef = collection(db, `restaurants/${restaurant}/orders`);
-        const ordersSnapshot = await getDocs(ordersRef);
-        const ordersData = ordersSnapshot.docs.map((doc) => ({
-          oid: doc.id,
-          ...doc.data(),
-        }));
+          console.log("Fetched orders:", ordersData);
 
-        console.log("Fetched orders:", ordersData); // Debugging
+          const dishIds = new Set();
+          ordersData.forEach((order) => {
+            dishIds.add(order.dishId);
+          });
 
-        const dishIds = new Set();
-        ordersData.forEach((order) => {
-          dishIds.add(order.dishId);
-        });
+          // Group orders by status
+          const ordersGroupedByStatus = ordersData.reduce(
+            (acc, order) => {
+              const table = order.table;
+              const status = order.done ? "completed" : "pending";
 
-        // Fetch dish details
-        const dishesCollection = collection(
-          db,
-          `restaurants/${restaurant}/dishes`
-        );
-        const dishesSnapshot = await getDocs(dishesCollection);
+              if (!acc[status][table]) {
+                acc[status][table] = [];
+              }
 
-        const fetchedDishDetails = {};
-        dishesSnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (dishIds.has(data.dishId)) {
+              acc[status][table].push(order);
+              return acc;
+            },
+            { pending: {}, completed: {} }
+          );
+
+          setOrderData(ordersGroupedByStatus);
+        },
+        (error) => {
+          console.error("Error fetching orders:", error);
+        }
+      );
+
+      // Listen for dish changes
+      const dishesRef = collection(db, `restaurants/${restaurant}/dishes`);
+      unsubscribeDishes = onSnapshot(
+        dishesRef,
+        (snapshot) => {
+          const fetchedDishDetails = {};
+          snapshot.forEach((doc) => {
+            const data = doc.data();
             fetchedDishDetails[data.dishId] = {
               name: data.name,
               price: Number(data.price) || 0,
             };
-          }
-        });
-        console.log(dishesSnapshot);
+          });
+          setDishDetails(fetchedDishDetails);
+        },
+        (error) => {
+          console.error("Error fetching dishes:", error);
+        }
+      );
 
-        setDishDetails(fetchedDishDetails);
-
-        const ordersGroupedByStatus = ordersData.reduce(
-          (acc, order) => {
-            const table = order.table;
-            const status = order.done ? "completed" : "pending";
-
-            if (!acc[status][table]) {
-              acc[status][table] = [];
-            }
-
-            acc[status][table].push(order);
-            return acc;
-          },
-          { pending: {}, completed: {} }
-        );
-
-        setOrderData(ordersGroupedByStatus);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-      } finally {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-  };
 
-  useEffect(() => {
-    fetchOrders();
+    // Cleanup function to unsubscribe from all listeners
+    return () => {
+      if (unsubscribeTables) unsubscribeTables();
+      if (unsubscribeOrders) unsubscribeOrders();
+      if (unsubscribeDishes) unsubscribeDishes();
+    };
   }, [restaurant]);
-
-  console.log(orderData);
 
   const handleMarkAsDone = async (orderId, table) => {
     try {
       const orderDocRef = doc(db, `restaurants/${restaurant}/orders`, orderId);
       await updateDoc(orderDocRef, { done: true });
       console.log(`Order ${orderId} marked as done successfully.`);
-      await fetchOrders(); // Fetch orders again to update the state
+      // No need to fetch orders again, onSnapshot will handle the update
     } catch (error) {
       console.error("Error marking order as done:", error);
     }
@@ -214,16 +217,11 @@ export default function Admin({ restaurantParam }) {
         `All data related to table ${tableId} has been deleted successfully.`
       );
 
-      // Optionally, update the table data state if needed
-      setTableData((prevTables) =>
-        prevTables.filter((table) => table.tid !== tableId)
-      );
+      // No need to update state manually, onSnapshot will handle the update
     } catch (error) {
       console.error("Error clearing table data:", error);
     }
   };
-
-  console.log(dishDetails);
 
   return (
     <div className="justify-center items-center">
