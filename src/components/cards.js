@@ -14,7 +14,7 @@ import {
 export function FeaturesSectionDemo() {
   const features = [
     {
-      title: "Built my a single developer",
+      title: "Built by a single developer",
       description:
         "Seriously, it was just me.",
       icon: <IconTerminal2 />,
