@@ -62,11 +62,11 @@ export default function Hero() {
   }, [user, logOut]);
 
   return (
-    <main className="flex min-h-screen justify-center py-2">
+    <main className="flex justify-center py-2">
       {user ? (
         <Button onClick={handleSignOut}>Sign Out</Button>
       ) : (
-        <Button onClick={handleSignIn}>Sign In with Google</Button>
+        <Button onClick={handleSignIn}>Sign In</Button>
       )}
     </main>
   );

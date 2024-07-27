@@ -10,6 +10,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/firebase";
+import { UserAuth } from "@/app/authcontext/authcontext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
@@ -51,11 +52,21 @@ const loadingStates = [
 ];
 
 export default function Admin({ restaurantParam }) {
+  const { user, googleSignIn, logOut } = UserAuth();
   const [tableData, setTableData] = useState([]);
   const [orderData, setOrderData] = useState({ pending: {}, completed: {} });
   const [loading, setLoading] = useState(false);
   const [dishDetails, setDishDetails] = useState(null);
   const [restaurant, setRestaurant] = useState(restaurantParam);
+
+  const handleSignOut = async () => {
+    try {
+      await logOut();
+      window.location.href = "/";
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   useEffect(() => {
     const storedRestaurant = localStorage.getItem("restaurant");
@@ -222,6 +233,8 @@ export default function Admin({ restaurantParam }) {
         <Button>
           <Link href={`/orders/${restaurant}/dishes`}>Add Dishes</Link>
         </Button>
+
+        <Button onClick={handleSignOut}>Sign Out</Button>
       </div>
 
       <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
