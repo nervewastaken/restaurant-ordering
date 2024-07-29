@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { db } from "@/firebase";
 import {
   query,
@@ -47,137 +47,158 @@ const Page = () => {
     content: () => componentRef.current,
   });
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setUser(localStorage.getItem("user"));
-      setTable(localStorage.getItem("table"));
-      setRestaurant(localStorage.getItem("restaurant"));
-    }
-  }, []);
+  // Use useCallback to memoize the function
+  const fetchOrdersAndPrices = useCallback(async () => {
+    if (!restaurant || !table || dishes.length > 0) return;
 
-  useEffect(() => {
-    const fetchOrdersAndPrices = async () => {
-      if (restaurant && table) {
-        try {
-          setIsLoading(true);
-          // Fetch restaurant info
-          const restaurantDoc = await getDoc(
-            doc(db, `restaurants`, restaurant)
-          );
-          const restaurantData = restaurantDoc.data();
-          setRestaurantName(restaurantData.name || "");
-          const taxRate = (Number(restaurantData.tax) || 0) / 100;
-          const serviceChargeRate = (Number(restaurantData.svch) || 0) / 100;
-          setTaxRate(taxRate);
-          setServiceChargeRate(serviceChargeRate);
+    console.log("Fetching orders and prices:", { restaurant, table });
 
-          // Fetch orders
-          const ordersQuery = query(
-            collection(db, `restaurants/${restaurant}/orders`),
-            where("table", "==", table)
-          );
-          const ordersSnapshot = await getDocs(ordersQuery);
+    try {
+      setIsLoading(true);
 
-          const fetchedDishes = [];
-          const dishIds = new Set();
-          ordersSnapshot.forEach((doc) => {
-            const data = doc.data();
-            fetchedDishes.push(data);
-            dishIds.add(data.dishId);
-          });
+      // Fetch restaurant info
+      const restaurantDoc = await getDoc(doc(db, `restaurants`, restaurant));
+      const restaurantData = restaurantDoc.data();
+      const newTaxRate = (Number(restaurantData.tax) || 0) / 100;
+      const newServiceChargeRate = (Number(restaurantData.svch) || 0) / 100;
 
-          setDishes(fetchedDishes);
+      // Fetch orders
+      const ordersQuery = query(
+        collection(db, `restaurants/${restaurant}/orders`),
+        where("table", "==", table)
+      );
+      const ordersSnapshot = await getDocs(ordersQuery);
 
-          // Fetch dish details
-          const dishesCollection = collection(
-            db,
-            `restaurants/${restaurant}/dishes`
-          );
-          const dishesSnapshot = await getDocs(dishesCollection);
+      const fetchedDishes = [];
+      const dishIds = new Set();
+      ordersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        fetchedDishes.push(data);
+        dishIds.add(data.dishId);
+      });
 
-          const fetchedDishDetails = {};
-          dishesSnapshot.forEach((doc) => {
-            const data = doc.data();
-            if (dishIds.has(data.dishId)) {
-              fetchedDishDetails[data.dishId] = {
-                name: data.name,
-                price: Number(data.price) || 0,
-              };
-            }
-          });
-
-          setDishDetails(fetchedDishDetails);
-
-          // Calculate total prices
-          const userMap = {};
-          let overallSubtotal = 0;
-          fetchedDishes.forEach((dish) => {
-            const dishDetail = fetchedDishDetails[dish.dishId];
-            const price = dishDetail ? dishDetail.price : 0;
-            const itemTotal = price * dish.quantity;
-            overallSubtotal += itemTotal;
-            if (userMap[dish.user]) {
-              userMap[dish.user].push({
-                ...dish,
-                name: dishDetail ? dishDetail.name : "Unknown Dish",
-                price,
-                totalPrice: itemTotal,
-              });
-            } else {
-              userMap[dish.user] = [
-                {
-                  ...dish,
-                  name: dishDetail ? dishDetail.name : "Unknown Dish",
-                  price,
-                  totalPrice: itemTotal,
-                },
-              ];
-            }
-          });
-
-          const overallTaxAmount = overallSubtotal * taxRate;
-          const overallServiceChargeAmount =
-            overallSubtotal * serviceChargeRate;
-          const overallTotalPrice =
-            overallSubtotal + overallTaxAmount + overallServiceChargeAmount;
-
-          setUserTotals(userMap);
-          setOverallTotalPrice(overallTotalPrice);
-
-          // Save bill to Firestore
-          const billId = generateBillId();
-          const billData = {
-            billId,
-            timestamp: serverTimestamp(),
-            orderValueBeforeTax: overallSubtotal,
-            orderValueAfterTax: overallTotalPrice,
-            names: Object.keys(userMap),
-            dishes: fetchedDishes.map((dish) => ({
-              name: fetchedDishDetails[dish.dishId].name,
-              quantity: dish.quantity,
-              price: fetchedDishDetails[dish.dishId].price,
-            })),
-          };
-
-          await addDoc(
-            collection(db, `restaurants/${restaurant}/bills`),
-            billData
-          );
-
-          setIsLoading(false);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-          setIsLoading(false);
+      // Combine orders
+      const combinedOrders = fetchedDishes.reduce((acc, order) => {
+        const existingOrder = acc.find((o) => o.dishId === order.dishId);
+        if (existingOrder) {
+          existingOrder.quantity += order.quantity;
+          if (order.timestamp > existingOrder.timestamp) {
+            existingOrder.timestamp = order.timestamp;
+          }
+        } else {
+          acc.push({ ...order });
         }
-      }
-    };
+        return acc;
+      }, []);
+
+      // Fetch dish details
+      const dishesCollection = collection(
+        db,
+        `restaurants/${restaurant}/dishes`
+      );
+      const dishesSnapshot = await getDocs(dishesCollection);
+
+      const fetchedDishDetails = {};
+      dishesSnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (dishIds.has(data.dishId)) {
+          fetchedDishDetails[data.dishId] = {
+            name: data.name,
+            price: Number(data.price) || 0,
+          };
+        }
+      });
+
+      // Calculate total prices
+      const userMap = {};
+      let overallSubtotal = 0;
+      combinedOrders.forEach((dish) => {
+        const dishDetail = fetchedDishDetails[dish.dishId];
+        const price = dishDetail ? dishDetail.price : 0;
+        const itemTotal = price * dish.quantity;
+        overallSubtotal += itemTotal;
+        if (userMap[dish.user]) {
+          userMap[dish.user].push({
+            ...dish,
+            name: dishDetail ? dishDetail.name : "Unknown Dish",
+            price,
+            totalPrice: itemTotal,
+          });
+        } else {
+          userMap[dish.user] = [
+            {
+              ...dish,
+              name: dishDetail ? dishDetail.name : "Unknown Dish",
+              price,
+              totalPrice: itemTotal,
+            },
+          ];
+        }
+      });
+
+      const overallTaxAmount = overallSubtotal * newTaxRate;
+      const overallServiceChargeAmount = overallSubtotal * newServiceChargeRate;
+      const newOverallTotalPrice =
+        overallSubtotal + overallTaxAmount + overallServiceChargeAmount;
+
+      // Save bill to Firestore
+      const billId = generateBillId();
+      const billData = {
+        billId,
+        timestamp: serverTimestamp(),
+        orderValueBeforeTax: overallSubtotal,
+        orderValueAfterTax: newOverallTotalPrice,
+        names: Object.keys(userMap),
+        dishes: combinedOrders.map((dish) => ({
+          name: fetchedDishDetails[dish.dishId].name,
+          quantity: dish.quantity,
+          price: fetchedDishDetails[dish.dishId].price,
+        })),
+      };
+
+      await addDoc(collection(db, `restaurants/${restaurant}/bills`), billData);
+
+      // Set all states at once to avoid multiple re-renders
+      setRestaurantName(restaurantData.name || "");
+      setTaxRate(newTaxRate);
+      setServiceChargeRate(newServiceChargeRate);
+      setDishes(combinedOrders);
+      setDishDetails(fetchedDishDetails);
+      setUserTotals(userMap);
+      setOverallTotalPrice(newOverallTotalPrice);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [restaurant, table, dishes.length]);
+
+  useEffect(() => {
+    console.log("Effect running:", {
+      restaurant,
+      table,
+      isLoading,
+      dishesLength: dishes.length,
+    });
+
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("user");
+      const storedTable = localStorage.getItem("table");
+      const storedRestaurant = localStorage.getItem("restaurant");
+
+      if (storedUser !== user) setUser(storedUser);
+      if (storedTable !== table) setTable(storedTable);
+      if (storedRestaurant !== restaurant) setRestaurant(storedRestaurant);
+    }
 
     fetchOrdersAndPrices();
-  }, [restaurant, table]);
+  }, [fetchOrdersAndPrices, user, table, restaurant]);
 
   const generateBillId = () => {
     return Math.random().toString(36).substring(2, 14);
   };
+
+  console.log(isLoading);
 
   const renderBillCard = (
     title,

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   collection,
   getDocs,
@@ -8,7 +8,7 @@ import {
   query,
   where,
   deleteDoc,
-  onSnapshot
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/firebase";
 import { UserAuth } from "@/app/authcontext/authcontext";
@@ -26,30 +26,14 @@ import {
 } from "@mui/material";
 
 const loadingStates = [
-  {
-    text: "Let the developer cook with the load",
-  },
-  {
-    text: "He's still cooking",
-  },
-  {
-    text: "Honestly, I'm alone here, its going to take time",
-  },
-  {
-    text: "easter egg if the site never loads?",
-  },
-  {
-    text: "I (developer) think you should refresh",
-  },
-  {
-    text: "Start a fight",
-  },
-  {
-    text: "I was not serious about the easter egg",
-  },
-  {
-    text: "Do you feel good about yourself",
-  },
+  { text: "Let the developer cook with the load" },
+  { text: "He's still cooking" },
+  { text: "Honestly, I'm alone here, its going to take time" },
+  { text: "easter egg if the site never loads?" },
+  { text: "I (developer) think you should refresh" },
+  { text: "Start a fight" },
+  { text: "I was not serious about the easter egg" },
+  { text: "Do you feel good about yourself" },
 ];
 
 export default function Admin({ restaurantParam }) {
@@ -69,17 +53,14 @@ export default function Admin({ restaurantParam }) {
     }
   };
 
-  useEffect(() => {
-    const storedRestaurant = localStorage.getItem("restaurant");
-    setRestaurant(storedRestaurant);
-  }, []);
+  const fetchData = useCallback(async () => {
+    if (!restaurant) return;
 
-  useEffect(() => {
     let unsubscribeTables;
     let unsubscribeOrders;
     let unsubscribeDishes;
 
-    if (restaurant) {
+    try {
       setLoading(true);
 
       // Listen for table changes
@@ -111,22 +92,28 @@ export default function Admin({ restaurantParam }) {
 
           console.log("Fetched orders:", ordersData);
 
-          const dishIds = new Set();
-          ordersData.forEach((order) => {
-            dishIds.add(order.dishId);
-          });
-
-          // Group orders by status
+          // Group orders by status and aggregate dish quantities
           const ordersGroupedByStatus = ordersData.reduce(
             (acc, order) => {
               const table = order.table;
               const status = order.done ? "completed" : "pending";
+              const dishId = order.dishId;
 
               if (!acc[status][table]) {
-                acc[status][table] = [];
+                acc[status][table] = {};
               }
 
-              acc[status][table].push(order);
+              if (!acc[status][table][dishId]) {
+                acc[status][table][dishId] = {
+                  dishId,
+                  quantity: 0,
+                  orders: [],
+                };
+              }
+
+              acc[status][table][dishId].quantity += order.quantity;
+              acc[status][table][dishId].orders.push(order);
+
               return acc;
             },
             { pending: {}, completed: {} }
@@ -158,11 +145,13 @@ export default function Admin({ restaurantParam }) {
           console.error("Error fetching dishes:", error);
         }
       );
-
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
       setLoading(false);
     }
 
-    // Cleanup function to unsubscribe from all listeners
+    // Return cleanup function
     return () => {
       if (unsubscribeTables) unsubscribeTables();
       if (unsubscribeOrders) unsubscribeOrders();
@@ -170,12 +159,28 @@ export default function Admin({ restaurantParam }) {
     };
   }, [restaurant]);
 
+  useEffect(() => {
+    const storedRestaurant = localStorage.getItem("restaurant");
+    if (storedRestaurant !== restaurant) {
+      setRestaurant(storedRestaurant);
+    }
+  }, [restaurant]);
+
+  useEffect(() => {
+    let cleanup;
+    if (restaurant) {
+      cleanup = fetchData();
+    }
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [fetchData]);
+
   const handleMarkAsDone = async (orderId, table) => {
     try {
       const orderDocRef = doc(db, `restaurants/${restaurant}/orders`, orderId);
       await updateDoc(orderDocRef, { done: true });
       console.log(`Order ${orderId} marked as done successfully.`);
-      // No need to fetch orders again, onSnapshot will handle the update
     } catch (error) {
       console.error("Error marking order as done:", error);
     }
@@ -199,6 +204,7 @@ export default function Admin({ restaurantParam }) {
         deleteDoc(doc.ref)
       );
 
+      // Delete the table
       const tableRef = collection(db, `restaurants/${restaurant}/tables`);
       const tableQuery = query(tableRef, where("tid", "==", tableId));
       const tablesSnapshot = await getDocs(tableQuery);
@@ -216,8 +222,6 @@ export default function Admin({ restaurantParam }) {
       console.log(
         `All data related to table ${tableId} has been deleted successfully.`
       );
-
-      // No need to update state manually, onSnapshot will handle the update
     } catch (error) {
       console.error("Error clearing table data:", error);
     }
@@ -231,7 +235,6 @@ export default function Admin({ restaurantParam }) {
         <Button>
           <Link href={`/orders/${restaurant}/dishes`}>Add Dishes</Link>
         </Button>
-
         <Button onClick={handleSignOut}>Sign Out</Button>
       </div>
 
@@ -264,6 +267,7 @@ export default function Admin({ restaurantParam }) {
           </Card>
         ))}
       </div>
+
       <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
         Pending Orders
       </h2>
@@ -271,59 +275,56 @@ export default function Admin({ restaurantParam }) {
         {Object.keys(orderData.pending).map((table) => (
           <Card key={table} sx={{ minWidth: 275, mb: 2 }}>
             <CardContent>
-              <Typography variant="h5" component="div" className="">
+              <Typography variant="h5" component="div">
                 Orders for Table {table}
               </Typography>
-              {orderData.pending[table].map((order) => {
-                const dishDetail = dishDetails[order.dishId] || {};
-                const dishName = dishDetail.name || "Unknown";
-                const dishPrice = dishDetail.price || 0;
-                const totalPrice = dishPrice * order.quantity;
+              {Object.values(orderData.pending[table]).map((dish) => (
+                <Box
+                  key={dish.dishId}
+                  sx={{
+                    border: 1,
+                    borderColor: "grey.300",
+                    p: 2,
+                    mb: 2,
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography variant="body2">
+                    Dish ID: {dish.dishId}
+                  </Typography>
+                  <Typography variant="body2">
+                    Dish Name: {dishDetails[dish.dishId]?.name}
+                  </Typography>
 
-                return (
-                  <Box
-                    key={order.oid}
-                    sx={{
-                      border: 1,
-                      borderColor: "grey.300",
-                      p: 2,
-                      mb: 2,
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Typography variant="body2">
-                      Dish ID: {order.dishId}
-                    </Typography>
-                    <Typography variant="body2">
-                      Dish Name: {dishName}
-                    </Typography>
-                    <Typography variant="body2">Price: {dishPrice}</Typography>
-                    <Typography variant="body2">
-                      Total Price: {totalPrice}
-                    </Typography>
-                    <Typography variant="body2">
-                      Quantity: {order.quantity}
-                    </Typography>
-                    <Typography variant="body2">
+                  <Typography variant="body2">
+                    Quantity: {dish.quantity}
+                  </Typography>
+                  {dish.orders.map((order) => (
+                    <Typography key={order.oid} variant="body2">
                       Timestamp:{" "}
                       {new Date(
                         order.timestamp.seconds * 1000
                       ).toLocaleTimeString()}
                     </Typography>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={() => handleMarkAsDone(order.oid, table)}
-                    >
-                      Mark as Done
-                    </Button>
-                  </Box>
-                );
-              })}
+                  ))}
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() =>
+                      dish.orders.forEach((order) =>
+                        handleMarkAsDone(order.oid, table)
+                      )
+                    }
+                  >
+                    Mark as Done
+                  </Button>
+                </Box>
+              ))}
             </CardContent>
           </Card>
         ))}
       </div>
+
       <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
         Completed Orders
       </h2>
@@ -334,39 +335,29 @@ export default function Admin({ restaurantParam }) {
               <Typography variant="h5" component="div">
                 Completed Orders for Table {table}
               </Typography>
-              {orderData.completed[table].map((order) => {
-                const dishDetail = dishDetails[order.dishId] || {};
-                const dishName = dishDetail.name || "Unknown";
-                const dishPrice = dishDetail.price || 0;
-                const totalPrice = dishPrice * order.quantity;
+              {Object.values(orderData.completed[table]).map((dish) => (
+                <Box
+                  key={dish.dishId}
+                  sx={{
+                    border: 1,
+                    borderColor: "grey.300",
+                    p: 2,
+                    mb: 2,
+                    borderRadius: 2,
+                  }}
+                >
+                  <Typography variant="body2">
+                    Dish ID: {dish.dishId}
+                  </Typography>
+                  <Typography variant="body2">
+                    Dish Name: {dishDetails[dish.dishId]?.name}
+                  </Typography>
 
-                return (
-                  <Box
-                    key={order.oid}
-                    sx={{
-                      border: 1,
-                      borderColor: "grey.300",
-                      p: 2,
-                      mb: 2,
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Typography variant="body2">
-                      Dish ID: {order.dishId}
-                    </Typography>
-                    <Typography variant="body2">
-                      Dish Name: {dishName}
-                    </Typography>
-                    <Typography variant="body2">Price: {dishPrice}</Typography>
-                    <Typography variant="body2">
-                      Total Price: {totalPrice}
-                    </Typography>
-                    <Typography variant="body2">
-                      Quantity: {order.quantity}
-                    </Typography>
-                  </Box>
-                );
-              })}
+                  <Typography variant="body2">
+                    Quantity: {dish.quantity}
+                  </Typography>
+                </Box>
+              ))}
             </CardContent>
           </Card>
         ))}
