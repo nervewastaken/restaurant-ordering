@@ -276,6 +276,7 @@ const Page = () => {
           </TableCell>
           <TableCell>{dish.name}</TableCell>
           <TableCell>{dish.price}</TableCell>
+          <TableCell>{dish.category}</TableCell>
           <TableCell>
             <input
               type="number"
@@ -448,6 +449,7 @@ const Page = () => {
                         <TableCell />
                         <TableCell>Dish</TableCell>
                         <TableCell>Price</TableCell>
+                        <TableCell>Category</TableCell>
                         <TableCell>Action</TableCell>
                       </TableRow>
                     </TableHead>

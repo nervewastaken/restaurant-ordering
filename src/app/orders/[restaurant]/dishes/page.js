@@ -32,11 +32,15 @@ const DishManager = () => {
     name: "",
     price: "",
     description: "",
+    category: "",
   });
 
   const [dishes, setDishes] = useState([]);
   const [editingDishId, setEditingDishId] = useState(null);
   const [restaurant, setRestaurant] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -47,8 +51,63 @@ const DishManager = () => {
   useEffect(() => {
     if (restaurant) {
       fetchDishes();
+      fetchCategories();
     }
   }, [restaurant]);
+
+  const fetchCategories = async () => {
+    try {
+      const categoriesRef = collection(
+        db,
+        `restaurants/${restaurant}/categories`
+      );
+      const q = query(categoriesRef, orderBy("catId", "asc"));
+      const querySnapshot = await getDocs(q);
+      const categoriesList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        category: doc.data().category, // Ensure we're using the 'category' field
+      }));
+      setCategories(categoriesList);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    try {
+      const categoriesRef = collection(
+        db,
+        `restaurants/${restaurant}/categories`
+      );
+      const q = query(categoriesRef, orderBy("catId", "desc"));
+      const querySnapshot = await getDocs(q);
+      let newCatId = 1;
+
+      if (!querySnapshot.empty) {
+        const highestCat = querySnapshot.docs[0];
+        newCatId = highestCat.data().catId + 1;
+      }
+
+      await addDoc(categoriesRef, {
+        catId: newCatId,
+        category: newCategory,
+      });
+
+      setNewCategory("");
+      fetchCategories();
+    } catch (error) {
+      console.error("Error adding category:", error);
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    try {
+      await deleteDoc(doc(db, `restaurants/${restaurant}/categories`, id));
+      fetchCategories(); // Refresh the list of categories after deletion
+    } catch (error) {
+      console.error("Error deleting category:", error);
+    }
+  };
 
   const fetchDishes = async () => {
     try {
@@ -83,10 +142,10 @@ const DishManager = () => {
         name: newDish.name,
         price: newDish.price,
         description: newDish.description,
-      
+        category: newDish.category, // This should now be a string
       });
 
-      setNewDish({ name: "", price: "", description: "" });
+      setNewDish({ name: "", price: "", description: "", category: "" });
       fetchDishes();
     } catch (error) {
       console.error("Error adding dish:", error);
@@ -108,9 +167,9 @@ const DishManager = () => {
       name: dish.name,
       price: dish.price,
       description: dish.description,
+      category: dish.category || "", // Ensure it's a string or empty string
     });
   };
-
   const handleUpdateDish = async () => {
     try {
       const dishRef = doc(
@@ -122,9 +181,9 @@ const DishManager = () => {
         name: newDish.name,
         price: newDish.price,
         description: newDish.description,
+        category: newDish.category, // Add this line
       });
-
-      setNewDish({ name: "", price: "", description: "" });
+      setNewDish({ name: "", price: "", description: "", category: "" });
       setEditingDishId(null);
       fetchDishes();
     } catch (error) {
@@ -136,39 +195,104 @@ const DishManager = () => {
     <div>
       <div className="flex px-2 justify-between h-[50px]">
         <h1 className="py-2">Dish Manager</h1>
-        <Button type="outlined"><Link href={`/orders/${restaurant}/admin`}>Return</Link></Button>
+        <Button type="outlined">
+          <Link href={`/orders/${restaurant}/admin`}>Return</Link>
+        </Button>
       </div>
+      <div className="flex items-center justify-center gap-10">
+        <div className="flex flex-col justify-center items-center gap-4">
+          <StyledInput
+            type="text"
+            placeholder="Dish Name"
+            value={newDish.name}
+            onChange={(e) => setNewDish({ ...newDish, name: e.target.value })}
+          />
+          <StyledInput
+            type="number"
+            placeholder="Price"
+            value={newDish.price}
+            onChange={(e) => setNewDish({ ...newDish, price: e.target.value })}
+          />
+          <TextareaAutosize
+            type="text"
+            placeholder="Description"
+            value={newDish.description}
+            onChange={(e) =>
+              setNewDish({ ...newDish, description: e.target.value })
+            }
+          />
+          <select
+            value={newDish.category ? newDish.category : ""}
+            onChange={(e) =>
+              setNewDish({ ...newDish, category: e.target.value })
+            }
+            className="border border-gray-300 rounded px-2 py-1"
+          >
+            <option value="">Select Category</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.category}>
+                {cat.category}
+              </option>
+            ))}
+          </select>
+          {editingDishId ? (
+            <Button type="outlined" onClick={handleUpdateDish}>
+              Update Dish
+            </Button>
+          ) : (
+            <Button type="outlined" onClick={handleAddDish}>
+              Add Dish
+            </Button>
+          )}
+        </div>
 
-      <div className="flex flex-col justify-center items-center gap-4">
-        <StyledInput
-          type="text"
-          placeholder="Dish Name"
-          value={newDish.name}
-          onChange={(e) => setNewDish({ ...newDish, name: e.target.value })}
-        />
-        <StyledInput
-          type="number"
-          placeholder="Price"
-          value={newDish.price}
-          onChange={(e) => setNewDish({ ...newDish, price: e.target.value })}
-        />
-        <TextareaAutosize
-          type="text"
-          placeholder="Description"
-          value={newDish.description}
-          onChange={(e) =>
-            setNewDish({ ...newDish, description: e.target.value })
-          }
-        />
-        {editingDishId ? (
-          <Button type="outlined" onClick={handleUpdateDish}>
-            Update Dish
-          </Button>
-        ) : (
-          <Button type="outlined" onClick={handleAddDish}>
-            Add Dish
-          </Button>
-        )}
+        <div className="flex flex-col justify-center items-center gap-4">
+          <input
+            type="text"
+            placeholder="New Category"
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            className="border border-gray-300 rounded px-2 py-1"
+          />
+          <button
+            onClick={handleAddCategory}
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
+            Add Category
+          </button>
+        </div>
+
+        <div>
+          <div className="flex flex-col justify-center items-center gap-4 mt-4">
+            <TableContainer component={Paper} className="mt-4">
+              <Table sx={{ minWidth: 250 }} aria-label="categories table">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Category</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {categories.map((cat) => (
+                    <TableRow key={cat.id}>
+                      <TableCell component="th" scope="row">
+                        {cat.category}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          type="text"
+                          onClick={() => handleDeleteCategory(cat.id)}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </div>
+        </div>
       </div>
       <TableContainer component={Paper} className="mt-4">
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -177,6 +301,7 @@ const DishManager = () => {
               <TableCell>Name</TableCell>
               <TableCell align="right">Price (₹)</TableCell>
               <TableCell align="right">Description</TableCell>
+              <TableCell align="right">Category</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -188,6 +313,7 @@ const DishManager = () => {
                 </TableCell>
                 <TableCell align="right">{dish.price}</TableCell>
                 <TableCell align="right">{dish.description}</TableCell>
+                <TableCell align="right">{dish.category}</TableCell>
                 <TableCell align="right">
                   <Button
                     type="text"

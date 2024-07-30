@@ -171,9 +171,6 @@ export default function Admin({ restaurantParam }) {
     if (restaurant) {
       cleanup = fetchData();
     }
-    return () => {
-      if (cleanup) cleanup();
-    };
   }, [fetchData]);
 
   const handleMarkAsDone = async (orderId, table) => {
