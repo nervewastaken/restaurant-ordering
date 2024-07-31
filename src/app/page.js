@@ -9,10 +9,10 @@ import { Footer } from "@/components/footer";
 
 export default function Home() {
   return (
-    <div className="w-full h-screen">
+    <div className="">
       <NavigationMenu />
       <AppleCardsCarouselDemo />
-      <div className="pt-[50px]">
+      <div className="lg:pt-[100px] sm:px-2 sm:pt-[20px] ">
         <FeaturesSectionDemo />
       </div>
       <Footer />

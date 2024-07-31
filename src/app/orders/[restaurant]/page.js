@@ -121,7 +121,22 @@ const Page = () => {
             id: doc.id,
             ...doc.data(),
           }));
-          setOrders(ordersList);
+
+          // Combine orders with the same dishId
+          const combinedOrders = ordersList.reduce((acc, order) => {
+            const existingOrder = acc.find((o) => o.dishId === order.dishId);
+            if (existingOrder) {
+              existingOrder.quantity += order.quantity;
+              if (order.timestamp > existingOrder.timestamp) {
+                existingOrder.timestamp = order.timestamp;
+              }
+            } else {
+              acc.push(order);
+            }
+            return acc;
+          }, []);
+
+          setOrders(combinedOrders);
         },
         (error) => {
           console.error("Error fetching orders:", error);
@@ -244,8 +259,6 @@ const Page = () => {
     }
   };
 
-  console.log(loading);
-
   const Row = ({ dish }) => {
     const [open, setOpen] = useState(false);
 
@@ -263,6 +276,7 @@ const Page = () => {
           </TableCell>
           <TableCell>{dish.name}</TableCell>
           <TableCell>{dish.price}</TableCell>
+          <TableCell>{dish.category}</TableCell>
           <TableCell>
             <input
               type="number"
@@ -435,6 +449,7 @@ const Page = () => {
                         <TableCell />
                         <TableCell>Dish</TableCell>
                         <TableCell>Price</TableCell>
+                        <TableCell>Category</TableCell>
                         <TableCell>Action</TableCell>
                       </TableRow>
                     </TableHead>
