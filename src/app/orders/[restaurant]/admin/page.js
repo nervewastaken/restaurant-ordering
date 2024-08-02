@@ -265,96 +265,116 @@ export default function Admin({ restaurantParam }) {
         ))}
       </div>
 
-      <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
-        Pending Orders
-      </h2>
-      <div className="px-4">
-        {Object.keys(orderData.pending).map((table) => (
-          <Card key={table} sx={{ minWidth: 275, mb: 2 }}>
-            <CardContent>
-              <Typography variant="h5" component="div">
-                Orders for Table {table}
-              </Typography>
-              {Object.values(orderData.pending[table]).map((dish) => (
-                <Box
-                  key={dish.dishId}
-                  sx={{
-                    border: 1,
-                    borderColor: "grey.300",
-                    p: 2,
-                    mb: 2,
-                    borderRadius: 2,
-                  }}
+      <div>
+        <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
+          Pending Orders by Table
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
+          {Object.keys(orderData.pending).map((table) => (
+            <Card key={table} sx={{ minWidth: 275 }}>
+              <CardContent>
+                <Typography variant="h5" component="div" gutterBottom>
+                  Table {table}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Pending Orders: {Object.keys(orderData.pending[table]).length}
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button
+                  size="small"
+                  onClick={() => handleViewTableOrders(table)}
                 >
-                  <Typography variant="body2">
-                    Dish ID: {dish.dishId}
-                  </Typography>
-                  <Typography variant="body2">
-                    Dish Name: {dishDetails[dish.dishId]?.name}
-                  </Typography>
+                  View Orders
+                </Button>
+              </CardActions>
+            </Card>
+          ))}
+        </div>
 
-                  <Typography variant="body2">
-                    Quantity: {dish.quantity}
-                  </Typography>
-                  {dish.orders.map((order) => (
-                    <Typography key={order.oid} variant="body2">
-                      Timestamp:{" "}
-                      {new Date(
-                        order.timestamp.seconds * 1000
-                      ).toLocaleTimeString()}
-                    </Typography>
-                  ))}
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() =>
-                      dish.orders.forEach((order) =>
-                        handleMarkAsDone(order.oid, table)
-                      )
-                    }
-                  >
-                    Mark as Done
-                  </Button>
-                </Box>
-              ))}
-            </CardContent>
-          </Card>
-        ))}
+        <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
+          All Pending Orders
+        </h2>
+        <div className="px-4">
+          {Object.entries(orderData.pending).map(([table, tableOrders]) => (
+            <div key={table} className="mb-6">
+              <Typography variant="h6" gutterBottom>
+                Table {table}
+              </Typography>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.values(tableOrders).map((dish) => (
+                  <Card key={dish.dishId} sx={{ minWidth: 275 }}>
+                    <CardContent>
+                      <Typography variant="h6" component="div">
+                        {dishDetails[dish.dishId]?.name ||
+                          `Dish ID: ${dish.dishId}`}
+                      </Typography>
+                      <Typography variant="body2">
+                        Quantity: {dish.quantity}
+                      </Typography>
+                      {dish.orders.map((order) => (
+                        <Typography key={order.oid} variant="body2">
+                          Timestamp:{" "}
+                          {new Date(
+                            order.timestamp.seconds * 1000
+                          ).toLocaleTimeString()}
+                        </Typography>
+                      ))}
+                    </CardContent>
+                    <CardActions>
+                      <Button
+                        size="small"
+                        onClick={() =>
+                          dish.orders.forEach((order) =>
+                            handleMarkAsDone(order.oid, table)
+                          )
+                        }
+                      >
+                        Mark as Done
+                      </Button>
+                    </CardActions>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <h2 className="px-10 py-10 text-gray-500 font-semibold text-2xl">
         Completed Orders
       </h2>
-      <div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
         {Object.keys(orderData.completed).map((table) => (
-          <Card key={table} sx={{ minWidth: 275, mb: 2 }}>
+          <Card key={table} sx={{ minWidth: 275, height: "100%" }}>
             <CardContent>
-              <Typography variant="h5" component="div">
-                Completed Orders for Table {table}
+              <Typography variant="h5" component="div" gutterBottom>
+                Table {table}
               </Typography>
-              {Object.values(orderData.completed[table]).map((dish) => (
-                <Box
-                  key={dish.dishId}
-                  sx={{
-                    border: 1,
-                    borderColor: "grey.300",
-                    p: 2,
-                    mb: 2,
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography variant="body2">
-                    Dish ID: {dish.dishId}
-                  </Typography>
-                  <Typography variant="body2">
-                    Dish Name: {dishDetails[dish.dishId]?.name}
-                  </Typography>
-
-                  <Typography variant="body2">
-                    Quantity: {dish.quantity}
-                  </Typography>
-                </Box>
-              ))}
+              <div className="max-h-[400px] overflow-y-auto">
+                {Object.values(orderData.completed[table]).map((dish) => (
+                  <Box
+                    key={dish.dishId}
+                    sx={{
+                      border: 1,
+                      borderColor: "grey.300",
+                      p: 2,
+                      mb: 2,
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography variant="body2">
+                      Dish ID: {dish.dishId}
+                    </Typography>
+                    <Typography variant="body2">
+                      Dish Name: {dishDetails[dish.dishId]?.name}
+                    </Typography>
+                    <Typography variant="body2">
+                      Quantity: {dish.quantity}
+                    </Typography>
+                  </Box>
+                ))}
+              </div>
             </CardContent>
           </Card>
         ))}
