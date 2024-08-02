@@ -41,6 +41,7 @@ const DishManager = () => {
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [sortCategory, setSortCategory] = useState("All");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -191,6 +192,11 @@ const DishManager = () => {
     }
   };
 
+  const filteredDishes =
+    sortCategory === "All"
+      ? dishes
+      : dishes.filter((dish) => dish.category === sortCategory);
+
   return (
     <div>
       <div className="flex px-2 justify-between h-[50px]">
@@ -294,6 +300,20 @@ const DishManager = () => {
           </div>
         </div>
       </div>
+      <div className="flex justify-end mb-4">
+        <select
+          value={sortCategory}
+          onChange={(e) => setSortCategory(e.target.value)}
+          className="border border-gray-300 rounded px-2 py-1"
+        >
+          <option value="All">All Categories</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.category}>
+              {cat.category}
+            </option>
+          ))}
+        </select>
+      </div>
       <TableContainer component={Paper} className="mt-4">
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
           <TableHead>
@@ -306,7 +326,7 @@ const DishManager = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {dishes.map((dish) => (
+            {filteredDishes.map((dish) => (
               <TableRow key={dish.id}>
                 <TableCell component="th" scope="row">
                   {dish.name}

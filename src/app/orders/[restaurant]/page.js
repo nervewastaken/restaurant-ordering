@@ -55,6 +55,7 @@ const Page = () => {
   const [dishNames, setDishNames] = useState({});
   const [loading, setLoading] = useState(true);
   const [pin, setPin] = useState(null);
+  const [sortCategory, setSortCategory] = useState("All");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -122,9 +123,11 @@ const Page = () => {
             ...doc.data(),
           }));
 
-          // Combine orders with the same dishId
+          // Combine orders with the same dishId and user
           const combinedOrders = ordersList.reduce((acc, order) => {
-            const existingOrder = acc.find((o) => o.dishId === order.dishId);
+            const existingOrder = acc.find(
+              (o) => o.dishId === order.dishId && o.user === order.user
+            );
             if (existingOrder) {
               existingOrder.quantity += order.quantity;
               if (order.timestamp > existingOrder.timestamp) {
@@ -187,14 +190,34 @@ const Page = () => {
 
     try {
       const ordersRef = collection(db, `restaurants/${restaurant}/orders`);
-      await addDoc(ordersRef, {
-        dishId,
-        user,
-        timestamp: new Date(),
-        quantity: parseInt(quantities[dishId]) || 1,
-        table,
-        done: false,
-      });
+      const q = query(
+        ordersRef,
+        where("dishId", "==", dishId),
+        where("user", "==", user),
+        where("table", "==", table)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        // Update existing order
+        const existingOrder = querySnapshot.docs[0];
+        const newQuantity =
+          existingOrder.data().quantity + (parseInt(quantities[dishId]) || 1);
+        await updateDoc(existingOrder.ref, {
+          quantity: newQuantity,
+          timestamp: new Date(),
+        });
+      } else {
+        // Create new order
+        await addDoc(ordersRef, {
+          dishId,
+          user,
+          timestamp: new Date(),
+          quantity: parseInt(quantities[dishId]) || 1,
+          table,
+          done: false,
+        });
+      }
     } catch (error) {
       console.error("Error adding to order:", error);
     }
@@ -259,7 +282,17 @@ const Page = () => {
     }
   };
 
-  const Row = ({ dish }) => {
+  const filteredDishes =
+    sortCategory === "All"
+      ? dishes
+      : dishes.filter((dish) => dish.category === sortCategory);
+
+  const Row = ({
+    dish,
+    quantities,
+    handleQuantityChange,
+    handleAddToOrder,
+  }) => {
     const [open, setOpen] = useState(false);
 
     return (
@@ -442,6 +475,22 @@ const Page = () => {
               </div>
               <div>
                 <h2 className="font-semibold text-xl mb-2">Menu:</h2>
+                <div className="flex justify-end mb-4">
+                  <select
+                    value={sortCategory}
+                    onChange={(e) => setSortCategory(e.target.value)}
+                    className="border border-gray-300 rounded px-2 py-1"
+                  >
+                    <option value="All">All Categories</option>
+                    {Array.from(
+                      new Set(dishes.map((dish) => dish.category))
+                    ).map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <TableContainer component={Paper}>
                   <Table>
                     <TableHead>
@@ -454,7 +503,7 @@ const Page = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {dishes.map((dish) => (
+                      {filteredDishes.map((dish) => (
                         <Row
                           key={dish.dishId}
                           dish={dish}
