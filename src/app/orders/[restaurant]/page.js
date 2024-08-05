@@ -314,14 +314,14 @@ const Page = () => {
             <input
               type="number"
               min="1"
-              value={quantities[dish.dishId] || 1}
+              value={quantities[dish.dishId]}
               onChange={(e) =>
                 handleQuantityChange(dish.dishId, e.target.value)
               }
             />
             <button
               onClick={() => handleAddToOrder(dish.dishId)}
-              className="ml-2"
+              className="h-2"
             >
               Add to Order
             </button>
@@ -359,169 +359,152 @@ const Page = () => {
       )}
       {!loading &&
         (user ? (
-          <div className="p-10">
-            <div className=" flex justify-between px-24">
-              <span className="sm:text-xl md:text-2xl lg:text-3xl text-gray-400">
+          <div className="p-4 md:p-10">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+              <span className="text-xl md:text-2xl lg:text-3xl text-gray-400 mb-4 md:mb-0">
                 Welcome to {restaurant}!
               </span>
-              <div className="px-24 pb-4">
-                <button
-                  onClick={handleBilling}
-                  className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
-                >
-                  Request for bill
-                </button>
-              </div>
+              <button
+                onClick={handleBilling}
+                className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+              >
+                Request for bill
+              </button>
             </div>
-            <div className="flex flex-col justify-center items-center sm:text-xl md:text-2xl lg:text-3xl">
-              <h1>
-                Hey {user} your pin is
+
+            <div className="text-center mb-6">
+              <h1 className="text-xl md:text-2xl lg:text-3xl">
+                Hey {user}, your pin is
                 <span className="font-semibold text-fuchsia-600"> {pin}</span>
               </h1>
             </div>
-            <div className="flex gap-4 pt-24 sm:flex-col md:flex-row lg:flex-row">
-              <div>
-                <h2 className="mb-2">Friends</h2>
-                {tableData.length > 0 && (
-                  <TableContainer component={Paper}>
-                    <Table
-                      sx={{ minWidth: 650 }}
-                      size="small"
-                      aria-label="a dense table"
-                    >
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Username</TableCell>
-                          <TableCell>Email</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {tableData.length > 0 &&
-                          tableData.map((rowData, index) => (
-                            <TableRow
-                              key={index}
-                              sx={{
-                                "&:last-child td, &:last-child th": {
-                                  border: 0,
-                                },
-                              }}
-                            >
-                              <TableCell component="th" scope="row">
-                                {rowData.username}
-                              </TableCell>
-                              <TableCell>{rowData.email}</TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </div>
-              <div>
-                <h1 className="text-blue-900">
-                  Here&apos;s what you can do now
-                  <div>
-                    <List aria-labelledby="decorated-list-demo">
-                      <ListItem>
-                        <ListItemDecorator>❤️</ListItemDecorator> Add your own
-                        on the left! scan the QR code and share your table pin
-                        for them to join in and order together!
-                      </ListItem>
-                      <ListItem>
-                        <ListItemDecorator>💵</ListItemDecorator> Issues with
-                        splitting the bill all the time? never again, our
-                        calculator tracks your orders by the user so that
-                        everyone pays their share fairly
-                      </ListItem>
-                      <ListItem>
-                        <ListItemDecorator>🥓</ListItemDecorator> Is your brain
-                        hungry after reading all that text above? Scroll down to
-                        start ordering right now!
-                      </ListItem>
-                    </List>
-                  </div>
-                </h1>
-              </div>
+
+            <div className="mb-8">
+              <h1 className="text-blue-900 text-lg md:text-xl lg:text-2xl mb-4">
+                Here&apos;s what you can do now
+              </h1>
+              <List aria-labelledby="decorated-list-demo">
+                <ListItem>
+                  <ListItemDecorator>❤️</ListItemDecorator> Add your own on the
+                  left! Scan the QR code and share your table pin for them to
+                  join in and order together!
+                </ListItem>
+                <ListItem>
+                  <ListItemDecorator>💵</ListItemDecorator> Issues with
+                  splitting the bill all the time? Never again, our calculator
+                  tracks your orders by the user so that everyone pays their
+                  share fairly.
+                </ListItem>
+                <ListItem>
+                  <ListItemDecorator>🥓</ListItemDecorator> Is your brain hungry
+                  after reading all that text above? Scroll down to start
+                  ordering right now!
+                </ListItem>
+              </List>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-              <div>
-                <h2 className="font-semibold text-xl mb-2">Current Orders:</h2>
+
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold mb-2">Friends</h2>
+              {tableData.length > 0 && (
                 <TableContainer component={Paper}>
-                  <Table>
+                  <Table size="small" aria-label="friends table">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Dish</TableCell>
-                        <TableCell>User</TableCell>
-                        <TableCell>Quantity</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Time</TableCell>
+                        <TableCell>Username</TableCell>
+                        <TableCell>Email</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {orders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell>{dishNames[order.dishId]}</TableCell>
-                          <TableCell>{order.user}</TableCell>
-                          <TableCell>{order.quantity}</TableCell>
-                          <TableCell>
-                            {order.done ? "Done" : "Pending"}
+                      {tableData.map((rowData, index) => (
+                        <TableRow key={index}>
+                          <TableCell component="th" scope="row">
+                            {rowData.username}
                           </TableCell>
-                          <TableCell>{formatTime(order.timestamp)}</TableCell>
+                          <TableCell>{rowData.email}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </TableContainer>
-              </div>
-              <div>
-                <h2 className="font-semibold text-xl mb-2">Menu:</h2>
-                <div className="flex justify-end mb-4">
-                  <select
-                    value={sortCategory}
-                    onChange={(e) => setSortCategory(e.target.value)}
-                    className="border border-gray-300 rounded px-2 py-1"
-                  >
-                    <option value="All">All Categories</option>
-                    {Array.from(
-                      new Set(dishes.map((dish) => dish.category))
-                    ).map((category) => (
+              )}
+            </div>
+
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold mb-2">Current Orders:</h2>
+              <TableContainer component={Paper}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Dish</TableCell>
+                      <TableCell>User</TableCell>
+                      <TableCell>Quantity</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Time</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {orders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell>{dishNames[order.dishId]}</TableCell>
+                        <TableCell>{order.user}</TableCell>
+                        <TableCell>{order.quantity}</TableCell>
+                        <TableCell>{order.done ? "Done" : "Pending"}</TableCell>
+                        <TableCell>{formatTime(order.timestamp)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Menu:</h2>
+              <div className="flex justify-end mb-4">
+                <select
+                  value={sortCategory}
+                  onChange={(e) => setSortCategory(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1"
+                >
+                  <option value="All">All Categories</option>
+                  {Array.from(new Set(dishes.map((dish) => dish.category))).map(
+                    (category) => (
                       <option key={category} value={category}>
                         {category}
                       </option>
-                    ))}
-                  </select>
-                </div>
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell />
-                        <TableCell>Dish</TableCell>
-                        <TableCell>Price</TableCell>
-                        <TableCell>Category</TableCell>
-                        <TableCell>Action</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredDishes.map((dish) => (
-                        <Row
-                          key={dish.dishId}
-                          dish={dish}
-                          quantities={quantities}
-                          handleQuantityChange={handleQuantityChange}
-                          handleAddToOrder={handleAddToOrder}
-                        />
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                    )
+                  )}
+                </select>
               </div>
+              <TableContainer component={Paper}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell />
+                      <TableCell>Dish</TableCell>
+                      <TableCell>Price</TableCell>
+                      <TableCell>Category</TableCell>
+                      <TableCell>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredDishes.map((dish) => (
+                      <Row
+                        key={dish.dishId}
+                        dish={dish}
+                        quantities={quantities}
+                        handleQuantityChange={handleQuantityChange}
+                        handleAddToOrder={handleAddToOrder}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col justify-center items-center min-h-screen">
+          <div className="flex flex-col justify-center items-center min-h-screen p-4">
             <h1 className="text-2xl mb-4">Join the Room</h1>
-            <form onSubmit={handleSubmit} className="w-64">
+            <form onSubmit={handleSubmit} className="w-full max-w-xs">
               <Label>Username</Label>
               <Input
                 type="text"
@@ -540,7 +523,7 @@ const Page = () => {
               />
               <button
                 type="submit"
-                className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+                className="w-full inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 mt-4"
               >
                 Join the room
               </button>

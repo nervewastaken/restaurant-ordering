@@ -33,6 +33,7 @@ const DishManager = () => {
     price: "",
     description: "",
     category: "",
+    type: "",
   });
 
   const [dishes, setDishes] = useState([]);
@@ -144,9 +145,16 @@ const DishManager = () => {
         price: newDish.price,
         description: newDish.description,
         category: newDish.category, // This should now be a string
+        type: newDish.type,
       });
 
-      setNewDish({ name: "", price: "", description: "", category: "" });
+      setNewDish({
+        name: "",
+        price: "",
+        description: "",
+        category: "",
+        type: "",
+      });
       fetchDishes();
     } catch (error) {
       console.error("Error adding dish:", error);
@@ -183,8 +191,15 @@ const DishManager = () => {
         price: newDish.price,
         description: newDish.description,
         category: newDish.category, // Add this line
+        type: newDish.type,
       });
-      setNewDish({ name: "", price: "", description: "", category: "" });
+      setNewDish({
+        name: "",
+        price: "",
+        description: "",
+        category: "",
+        type: "",
+      });
       setEditingDishId(null);
       fetchDishes();
     } catch (error) {
@@ -240,6 +255,15 @@ const DishManager = () => {
                 {cat.category}
               </option>
             ))}
+          </select>
+          <select
+            value={newDish.type}
+            onChange={(e) => setNewDish({ ...newDish, type: e.target.value })}
+          >
+            <option value="">Select</option>
+            <option value={"veg"}>veg</option>
+            <option value={"egg"}>egg</option>
+            <option value={"non-veg"}>non-veg</option>
           </select>
           {editingDishId ? (
             <Button type="outlined" onClick={handleUpdateDish}>
@@ -322,6 +346,7 @@ const DishManager = () => {
               <TableCell align="right">Price (₹)</TableCell>
               <TableCell align="right">Description</TableCell>
               <TableCell align="right">Category</TableCell>
+              <TableCell align="right">Type</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -334,6 +359,7 @@ const DishManager = () => {
                 <TableCell align="right">{dish.price}</TableCell>
                 <TableCell align="right">{dish.description}</TableCell>
                 <TableCell align="right">{dish.category}</TableCell>
+                <TableCell align="right">{dish.type}</TableCell>
                 <TableCell align="right">
                   <Button
                     type="text"
