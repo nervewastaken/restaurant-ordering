@@ -280,14 +280,6 @@ export default function Admin({ restaurantParam }) {
                   Pending Orders: {Object.keys(orderData.pending[table]).length}
                 </Typography>
               </CardContent>
-              <CardActions>
-                <Button
-                  size="small"
-                  onClick={() => handleViewTableOrders(table)}
-                >
-                  View Orders
-                </Button>
-              </CardActions>
             </Card>
           ))}
         </div>
