@@ -144,7 +144,7 @@ const DishManager = () => {
         name: newDish.name,
         price: newDish.price,
         description: newDish.description,
-        category: newDish.category, // This should now be a string
+        category: newDish.category,
         type: newDish.type,
       });
 
@@ -176,9 +176,11 @@ const DishManager = () => {
       name: dish.name,
       price: dish.price,
       description: dish.description,
-      category: dish.category || "", // Ensure it's a string or empty string
+      category: dish.category || "",
+      type: dish.type || "", // Add this line to include the type
     });
   };
+
   const handleUpdateDish = async () => {
     try {
       const dishRef = doc(
@@ -190,7 +192,7 @@ const DishManager = () => {
         name: newDish.name,
         price: newDish.price,
         description: newDish.description,
-        category: newDish.category, // Add this line
+        category: newDish.category,
         type: newDish.type,
       });
       setNewDish({
