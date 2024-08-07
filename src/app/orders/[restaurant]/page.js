@@ -309,10 +309,10 @@ const Page = () => {
           </TableCell>
           <TableCell>{dish.name}</TableCell>
           <TableCell>{dish.price}</TableCell>
-          <TableCell>{dish.category}</TableCell>
           <TableCell>
             <input
               type="number"
+              placeholder="enter a value"
               min="1"
               value={quantities[dish.dishId]}
               onChange={(e) =>
@@ -331,7 +331,15 @@ const Page = () => {
           <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
             <Collapse in={open} timeout="auto" unmountOnExit>
               <Box margin={1}>
-                <Typography variant="body2">{dish.description}</Typography>
+                <Typography variant="body3">
+                  Category : {dish.category}
+                </Typography>
+                <br />
+                <Typography variant="body4">{dish.type}</Typography>
+                <br />
+                <Typography variant="body2">
+                  Description: {dish.description}
+                </Typography>
               </Box>
             </Collapse>
           </TableCell>
@@ -482,7 +490,6 @@ const Page = () => {
                       <TableCell />
                       <TableCell>Dish</TableCell>
                       <TableCell>Price</TableCell>
-                      <TableCell>Category</TableCell>
                       <TableCell>Action</TableCell>
                     </TableRow>
                   </TableHead>
