@@ -315,7 +315,8 @@ export default function Admin({ restaurantParam }) {
                     </CardContent>
                     <CardActions>
                       <Button
-                        size="small"
+                        size="large"
+                        
                         onClick={() =>
                           dish.orders.forEach((order) =>
                             handleMarkAsDone(order.oid, table)
