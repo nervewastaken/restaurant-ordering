@@ -1,36 +1,35 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import {
-  addDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  updateDoc,
-  onSnapshot,
-} from "firebase/firestore";
-import { db } from "@/firebase";
-import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
-import { IconSquareRoundedX } from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
+import { db } from "@/firebase";
+import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
+import List from "@mui/joy/List";
+import ListItem from "@mui/joy/ListItem";
+import ListItemDecorator from "@mui/joy/ListItemDecorator";
+import Box from "@mui/material/Box";
+import Collapse from "@mui/material/Collapse";
+import IconButton from "@mui/material/IconButton";
+import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import IconButton from "@mui/material/IconButton";
-import Collapse from "@mui/material/Collapse";
-import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
-import List from "@mui/joy/List";
-import ListItem from "@mui/joy/ListItem";
-import ListItemDecorator from "@mui/joy/ListItemDecorator";
+import { IconSquareRoundedX } from "@tabler/icons-react";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { useEffect, useState } from "react";
 
 const loadingStates = [
   { text: "Let the developer cook with the load" },
@@ -356,8 +355,15 @@ const Page = () => {
           </TableCell>
         </TableRow>
         <TableRow>
-          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
-            <Collapse in={open} timeout="auto" unmountOnExit>
+          <TableCell
+            style={{ paddingBottom: 0, paddingTop: 0 }}
+            colSpan={6}
+          >
+            <Collapse
+              in={open}
+              timeout="auto"
+              unmountOnExit
+            >
               <Box margin={1}>
                 <Typography variant="body3">
                   Category : {dish.category}
@@ -443,7 +449,10 @@ const Page = () => {
               <h2 className="text-lg font-semibold mb-2">Friends</h2>
               {tableData.length > 0 && (
                 <TableContainer component={Paper}>
-                  <Table size="small" aria-label="friends table">
+                  <Table
+                    size="small"
+                    aria-label="friends table"
+                  >
                     <TableHead>
                       <TableRow>
                         <TableCell>Username</TableCell>
@@ -453,7 +462,10 @@ const Page = () => {
                     <TableBody>
                       {tableData.map((rowData, index) => (
                         <TableRow key={index}>
-                          <TableCell component="th" scope="row">
+                          <TableCell
+                            component="th"
+                            scope="row"
+                          >
                             {rowData.username}
                           </TableCell>
                           <TableCell>{rowData.email}</TableCell>
@@ -504,7 +516,10 @@ const Page = () => {
                   <option value="All">All Categories</option>
                   {Array.from(new Set(dishes.map((dish) => dish.category))).map(
                     (category) => (
-                      <option key={category} value={category}>
+                      <option
+                        key={category}
+                        value={category}
+                      >
                         {category}
                       </option>
                     )
@@ -538,8 +553,11 @@ const Page = () => {
           </div>
         ) : (
           <div className="flex flex-col justify-center items-center min-h-screen p-4">
-            <h1 className="text-2xl mb-4">Join the Room</h1>
-            <form onSubmit={handleSubmit} className="w-full max-w-xs">
+            <h1 className="text-2xl mb-4">Join the Table</h1>
+            <form
+              onSubmit={handleSubmit}
+              className="w-full max-w-xs"
+            >
               <Label>Username</Label>
               <Input
                 type="text"
@@ -548,6 +566,7 @@ const Page = () => {
                 onChange={handleInputChange}
                 required
               />
+              <div className="my-3" />
               <Label>Email</Label>
               <Input
                 type="email"
@@ -558,9 +577,9 @@ const Page = () => {
               />
               <button
                 type="submit"
-                className="w-full inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 mt-4"
+                className="w-full inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 mt-6"
               >
-                Join the room
+                Join the table
               </button>
             </form>
           </div>
