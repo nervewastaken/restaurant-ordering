@@ -78,9 +78,19 @@ const Page = () => {
           collection(db, "restaurants", restaurant, "users"),
           where("table", "==", table)
         ),
-        (snapshot) => {
-          const data = snapshot.docs.map((doc) => doc.data());
-          setTableData(data);
+        async (snapshot) => {
+          if (snapshot.empty) {
+            // Auto-create a placeholder user if none exists
+            await addDoc(collection(db, "restaurants", restaurant, "users"), {
+              username: "default",
+              email: "placeholder@example.com",
+              table,
+              restaurant,
+            });
+          } else {
+            const data = snapshot.docs.map((doc) => doc.data());
+            setTableData(data);
+          }
         },
         (error) => {
           console.error("Error getting table data:", error);
@@ -94,17 +104,29 @@ const Page = () => {
           collection(db, `restaurants/${restaurant}/dishes`),
           orderBy("dishId", "asc")
         ),
-        (snapshot) => {
-          const dishesList = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          const names = dishesList.reduce((acc, dish) => {
-            acc[dish.dishId] = dish.name;
-            return acc;
-          }, {});
-          setDishes(dishesList);
-          setDishNames(names);
+        async (snapshot) => {
+          if (snapshot.empty) {
+            // Add a sample dish if none exist
+            await addDoc(collection(db, `restaurants/${restaurant}/dishes`), {
+              name: "Sample Dish",
+              dishId: 1,
+              price: 99,
+              category: "Sample",
+              description: "This is a placeholder dish.",
+              type: "Veg",
+            });
+          } else {
+            const dishesList = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            const names = dishesList.reduce((acc, dish) => {
+              acc[dish.dishId] = dish.name;
+              return acc;
+            }, {});
+            setDishes(dishesList);
+            setDishNames(names);
+          }
         },
         (error) => {
           console.error("Error fetching dishes:", error);
@@ -152,14 +174,20 @@ const Page = () => {
           collection(db, "restaurants", restaurant, "tables"),
           where("tid", "==", table)
         ),
-        (snapshot) => {
-          snapshot.forEach((doc) => {
-            if (doc.exists()) {
-              setPin(doc.data().pin);
-            }
-          });
+        async (snapshot) => {
           if (snapshot.empty) {
-            console.log("No matching documents.");
+            // Auto-create table with a default pin
+            await addDoc(collection(db, "restaurants", restaurant, "tables"), {
+              tid: table,
+              pin: Math.floor(1000 + Math.random() * 9000), // 4-digit random pin
+              stat: "active",
+            });
+          } else {
+            snapshot.forEach((doc) => {
+              if (doc.exists()) {
+                setPin(doc.data().pin);
+              }
+            });
           }
         },
         (error) => {
