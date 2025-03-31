@@ -1,29 +1,21 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  collection,
-  getDocs,
-  updateDoc,
-  doc,
-  query,
-  where,
-  deleteDoc,
-  onSnapshot,
-} from "firebase/firestore";
-import { db } from "@/firebase";
 import { UserAuth } from "@/app/authcontext/authcontext";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
-import { IconSquareRoundedX } from "@tabler/icons-react";
+import { db } from "@/firebase";
+import { Box, Card, CardActions, CardContent, Typography } from "@mui/material";
 import {
-  Box,
-  Card,
-  CardActions,
-  CardContent,
-  Typography,
-  ButtonGroup,
-} from "@mui/material";
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 
 const loadingStates = [
   { text: "Let the developer cook with the load" },
@@ -226,7 +218,11 @@ export default function Admin({ restaurantParam }) {
 
   return (
     <div className="justify-center items-center">
-      <Loader loadingStates={loadingStates} loading={loading} duration={2000} />
+      <Loader
+        loadingStates={loadingStates}
+        loading={loading}
+        duration={2000}
+      />
       <div className="flex justify-between py-2 px-2">
         <h1 className="py-1">Admin</h1>
         <Button>
@@ -240,15 +236,27 @@ export default function Admin({ restaurantParam }) {
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
         {tableData.map((table) => (
-          <Card key={table.tid} sx={{ minWidth: 200 }}>
+          <Card
+            key={table.tid}
+            sx={{ minWidth: 200 }}
+          >
             <CardContent>
-              <Typography variant="h5" component="div">
+              <Typography
+                variant="h5"
+                component="div"
+              >
                 Table ID: {table.tid}
               </Typography>
-              <Typography sx={{ mb: 1.5 }} color="text.secondary">
+              <Typography
+                sx={{ mb: 1.5 }}
+                color="text.secondary"
+              >
                 Status: {table.stat}
               </Typography>
-              <Typography sx={{ mb: 1.5 }} color="text.secondary">
+              <Typography
+                sx={{ mb: 1.5 }}
+                color="text.secondary"
+              >
                 Pin: {table.pin}
               </Typography>
             </CardContent>
@@ -271,12 +279,22 @@ export default function Admin({ restaurantParam }) {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
           {Object.keys(orderData.pending).map((table) => (
-            <Card key={table} sx={{ minWidth: 275 }}>
+            <Card
+              key={table}
+              sx={{ minWidth: 275 }}
+            >
               <CardContent>
-                <Typography variant="h5" component="div" gutterBottom>
+                <Typography
+                  variant="h5"
+                  component="div"
+                  gutterBottom
+                >
                   Table {table}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
                   Pending Orders: {Object.keys(orderData.pending[table]).length}
                 </Typography>
               </CardContent>
@@ -289,15 +307,27 @@ export default function Admin({ restaurantParam }) {
         </h2>
         <div className="px-4">
           {Object.entries(orderData.pending).map(([table, tableOrders]) => (
-            <div key={table} className="mb-6">
-              <Typography variant="h6" gutterBottom>
+            <div
+              key={table}
+              className="mb-6"
+            >
+              <Typography
+                variant="h6"
+                gutterBottom
+              >
                 Table {table}
               </Typography>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.values(tableOrders).map((dish) => (
-                  <Card key={dish.dishId} sx={{ minWidth: 275 }}>
+                  <Card
+                    key={dish.dishId}
+                    sx={{ minWidth: 275 }}
+                  >
                     <CardContent>
-                      <Typography variant="h6" component="div">
+                      <Typography
+                        variant="h6"
+                        component="div"
+                      >
                         {dishDetails[dish.dishId]?.name ||
                           `Dish ID: ${dish.dishId}`}
                       </Typography>
@@ -305,7 +335,10 @@ export default function Admin({ restaurantParam }) {
                         Quantity: {dish.quantity}
                       </Typography>
                       {dish.orders.map((order) => (
-                        <Typography key={order.oid} variant="body2">
+                        <Typography
+                          key={order.oid}
+                          variant="body2"
+                        >
                           Timestamp:{" "}
                           {new Date(
                             order.timestamp.seconds * 1000
@@ -316,7 +349,6 @@ export default function Admin({ restaurantParam }) {
                     <CardActions>
                       <Button
                         size="large"
-                        
                         onClick={() =>
                           dish.orders.forEach((order) =>
                             handleMarkAsDone(order.oid, table)
@@ -339,9 +371,16 @@ export default function Admin({ restaurantParam }) {
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
         {Object.keys(orderData.completed).map((table) => (
-          <Card key={table} sx={{ minWidth: 275, height: "100%" }}>
+          <Card
+            key={table}
+            sx={{ minWidth: 275, height: "100%" }}
+          >
             <CardContent>
-              <Typography variant="h5" component="div" gutterBottom>
+              <Typography
+                variant="h5"
+                component="div"
+                gutterBottom
+              >
                 Table {table}
               </Typography>
               <div className="max-h-[400px] overflow-y-auto">

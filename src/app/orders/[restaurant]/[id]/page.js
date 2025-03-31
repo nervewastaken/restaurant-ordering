@@ -1,9 +1,8 @@
 "use client";
-import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
-import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { db } from "@/firebase";
 import { MultiStepLoader as Loader } from "@/components/ui/multi-step-loader";
+import { db } from "@/firebase";
+import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { useEffect, useState } from "react";
 
 const loadingStates = [
   { text: "Let the developer cook with the load" },
@@ -26,12 +25,10 @@ const Page = ({ params }) => {
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    localStorage.removeItem('table');
-    localStorage.removeItem('restaurant');
-    localStorage.removeItem('user');
-  }, []); 
-
-
+    localStorage.removeItem("table");
+    localStorage.removeItem("restaurant");
+    localStorage.removeItem("user");
+  }, []);
 
   const generateRandomNumber = () => {
     const randomNumber = Math.floor(Math.random() * 10000);
@@ -45,7 +42,6 @@ const Page = ({ params }) => {
     console.log(PIN);
 
     try {
-     
       await addDoc(collection(db, "restaurants", restaurant, "tables"), {
         tid: id,
         pin: PIN,
@@ -113,7 +109,6 @@ const Page = ({ params }) => {
         localStorage.setItem("table", id);
         localStorage.setItem("restaurant", restaurant);
 
-        
         setTimeout(() => {
           setLoading(false); // Stop loading
           window.location.href = `/orders/${restaurant}`;
@@ -125,7 +120,6 @@ const Page = ({ params }) => {
     } catch (error) {
       console.error("Error fetching documents: ", error);
     } finally {
-       
     }
   };
 
@@ -146,43 +140,61 @@ const Page = ({ params }) => {
   }
 
   return (
-    <div className="flex justify-center">
-      {id}
-      {pinExists ? (
-        <form onSubmit={handleSubmit} className="max-w-lg w-full">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-            className="mt-4 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="mt-4 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-          <input
-            type="number"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="Pin"
-            className="mt-4 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-          <button type="submit" className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
-                  Join Room
-                </button>
-        </form>
-      ) : (
-        <div className="max-w-lg w-full">
-          <button onClick={handlePinCreation} className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
-                  Generate a pin
-                </button>
-        </div>
-      )}
-    </div>
+    <section className="flex flex-col justify-center items-center h-full mt-10 gap-y-2">
+      <h1 className="text-4xl font-bold text-gray-800">
+        Welcome to {restaurant}
+      </h1>
+      <h3 className="text-lg font-semibold">Table No: {id}</h3>
+      <div className="flex justify-center">
+        {pinExists ? (
+          <form
+            onSubmit={handleSubmit}
+            className="w-full justify-center items-center flex flex-col"
+          >
+            <h4 className="text-lg font-semibold">Enter pin to join table</h4>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
+              className="mt-4 shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-[512px]"
+            />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="mt-4 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            <input
+              type="number"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Pin"
+              className="mt-4 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
+            <button
+              type="submit"
+              className="inline-flex h-12 animate-shimmer items-center rounded-md mt-2 mx-auto border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 ml-auto"
+            >
+              Join Room
+            </button>
+          </form>
+        ) : (
+          <div className="max-w-lg w-full h-full mt-1 flex flex-col gap-y-4">
+            <h4 className="text-lg font-semibold">
+              Generate pin to create table
+            </h4>
+            <button
+              onClick={handlePinCreation}
+              className="inline-flex h-12 animate-shimmer items-center justify-center rounded-md border border-slate-800 bg-[linear-gradient(110deg,#000103,45%,#1e2631,55%,#000103)] bg-[length:200%_100%] px-6 font-medium text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50"
+            >
+              Generate a pin
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
   );
 };
 
